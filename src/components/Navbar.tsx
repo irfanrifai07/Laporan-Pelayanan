@@ -37,9 +37,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (!user) return 'Tamu';
     switch (user.role) {
       case 'admin_induk':
-        return 'Admin Puskesmas';
       case 'admin_kecamatan':
-        return 'Admin Kecamatan';
+        return 'Admin Induk';
       case 'bidan_desa':
         return `Bidan Desa ${user.village || ''}`;
     }

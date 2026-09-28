@@ -693,8 +693,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                   >
                     <option value="bidan_desa">Bidan Desa</option>
-                    <option value="admin_induk">Admin Induk (Puskesmas)</option>
-                    <option value="admin_kecamatan">Admin Kecamatan (Koordinator KB)</option>
+                    <option value="admin_induk">Admin Induk (Puskesmas / Koordinator KB)</option>
                   </select>
                 </div>
               </div>
@@ -752,14 +751,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                         @{u.username}
                       </span>
-                      {u.role === 'admin_induk' && (
+                      {(u.role === 'admin_induk' || (u.role as string) === 'admin_kecamatan') && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                           Admin Induk
-                        </span>
-                      )}
-                      {u.role === 'admin_kecamatan' && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">
-                          Admin Kecamatan
                         </span>
                       )}
                       {u.role === 'bidan_desa' && (

@@ -291,12 +291,23 @@ export default function App() {
       <LoginModal
         isOpen={isLoginModalOpen}
         users={users}
+        villages={villages}
         onClose={() => {
           if (currentUser) setIsLoginModalOpen(false);
         }}
         onLoginSuccess={(user) => {
           handleLoginSuccess(user);
           setIsLoginModalOpen(false);
+        }}
+        onUserRegistered={(newUser) => {
+          setUsers((prev) => {
+            const updated = [...prev.filter((u) => u.id !== newUser.id), newUser];
+            StorageService.saveUsers(updated);
+            return updated;
+          });
+          handleLoginSuccess(newUser);
+          setIsLoginModalOpen(false);
+          showToast(`Akun ${newUser.name} berhasil didaftarkan dan langsung aktif!`);
         }}
       />
     </div>

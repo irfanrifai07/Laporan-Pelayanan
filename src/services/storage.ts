@@ -5,6 +5,7 @@ import {
   FacilityProfile,
   MonthlyF2KBCellData,
   PatientRecord,
+  Role,
   User,
   Village,
 } from '../types';
@@ -85,13 +86,25 @@ export const StorageService = {
 
   // USERS
   getUsers(): User[] {
-    return safeGet<User[]>(STORAGE_KEYS.USERS, initialUsers);
+    const list = safeGet<User[]>(STORAGE_KEYS.USERS, initialUsers);
+    // Satukan semua jenis admin menjadi Admin Induk
+    return list.map((u) =>
+      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
+    );
   },
   saveUsers(users: User[]): void {
-    safeSet(STORAGE_KEYS.USERS, users);
+    const unified = users.map((u) =>
+      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
+    );
+    safeSet(STORAGE_KEYS.USERS, unified);
   },
   getCurrentUser(): User | null {
-    return safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    const u = safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    if (!u) return null;
+    if (u.role === ('admin_kecamatan' as any)) {
+      return { ...u, role: 'admin_induk' as Role };
+    }
+    return u;
   },
   setCurrentUser(user: User | null): void {
     if (user) {
