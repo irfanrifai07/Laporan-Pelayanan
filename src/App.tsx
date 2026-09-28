@@ -126,35 +126,28 @@ export default function App() {
     StorageService.saveUsers(newUsers);
   };
 
-  // Real-time auto-persistence: pastikan apapun yang diupdate langsung tersimpan ke localStorage
+  // Selalu segarkan data terbaru dari storage saat berpindah tab
   useEffect(() => {
-    StorageService.saveFacilityProfile(facility);
-  }, [facility]);
+    setUsers(StorageService.getUsers());
+    setRecords(StorageService.getRecords());
+    setVillages(StorageService.getVillages());
+    setFacility(StorageService.getFacilityProfile());
+  }, [activeTab]);
 
-  useEffect(() => {
-    StorageService.saveVillages(villages);
-  }, [villages]);
-
-  useEffect(() => {
-    StorageService.saveUsers(users);
-  }, [users]);
-
-  useEffect(() => {
-    StorageService.saveRecords(records);
-  }, [records]);
-
-  // Cross-tab storage listener
+  // Sinkronisasi realtime multi-tab & multi-jendela storage listener
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (!e.key) return;
-      if (e.key === 'kb_faskes_patient_records_v2') {
+      if (e.key.includes('records')) {
         setRecords(StorageService.getRecords());
-      } else if (e.key === 'kb_faskes_facility_profile_v1') {
+      } else if (e.key.includes('profile')) {
         setFacility(StorageService.getFacilityProfile());
-      } else if (e.key === 'kb_faskes_villages_v1') {
+      } else if (e.key.includes('villages')) {
         setVillages(StorageService.getVillages());
-      } else if (e.key === 'kb_faskes_users_v1') {
+      } else if (e.key.includes('users')) {
         setUsers(StorageService.getUsers());
+      } else if (e.key.includes('current_user')) {
+        setCurrentUser(StorageService.getCurrentUser());
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -248,6 +241,11 @@ export default function App() {
             currentUser={currentUser}
             onDataReset={handleDataReset}
             onClearRecords={handleClearRecords}
+            onSwitchUser={(targetUser) => {
+              StorageService.setCurrentUser(targetUser);
+              handleLoginSuccess(targetUser);
+              showToast(`Beralih akun: Sekarang Anda masuk sebagai ${targetUser.name}`);
+            }}
           />
         )}
       </main>

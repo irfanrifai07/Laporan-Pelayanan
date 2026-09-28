@@ -165,7 +165,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     };
 
     // Simpan ke storage
-    const updatedUsers = [...allUsers, newUser];
+    const updatedUsers = [...allUsers.filter((u) => u.id !== newUser.id), newUser];
     StorageService.saveUsers(updatedUsers);
     StorageService.setCurrentUser(newUser);
     StorageService.logActivity(
@@ -174,17 +174,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       `Pendaftaran akun baru secara mandiri: ${newUser.name} (@${newUser.username}) sebagai ${newUser.role}`
     );
 
-    setRegSuccessMessage(`Pendaftaran berhasil! Mengalihkan ke akun ${newUser.name}...`);
-
-    // Callback ke parent untuk update state dan langsung login
-    setTimeout(() => {
-      if (onUserRegistered) {
-        onUserRegistered(newUser);
-      } else {
-        onLoginSuccess(newUser);
-      }
-      if (onClose) onClose();
-    }, 600);
+    // Langsung update state aplikasi dan masuk sebagai user baru
+    if (onUserRegistered) {
+      onUserRegistered(newUser);
+    } else {
+      onLoginSuccess(newUser);
+    }
+    if (onClose) onClose();
   };
 
   return (

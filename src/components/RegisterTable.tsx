@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ContraceptiveMethod, FacilityProfile, PatientRecord, User, Village } from '../types';
 import {
   METHOD_SHORT_LABELS,
@@ -57,8 +57,16 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<number>(0); // 0 = Semua Bulan
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
-  // Selected record for detail modal
   const [detailRecord, setDetailRecord] = useState<PatientRecord | null>(null);
+
+  // Otomatis sinkronkan filter wilayah saat berganti akun
+  useEffect(() => {
+    if (currentUser?.role === 'bidan_desa' && currentUser.village) {
+      setSelectedVillage(currentUser.village);
+    } else {
+      setSelectedVillage('SEMUA');
+    }
+  }, [currentUser]);
 
   const monthNames = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',

@@ -20,6 +20,7 @@ import {
   AlertCircle,
   KeyRound,
   Shield,
+  LogIn,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -32,6 +33,7 @@ interface AdminPanelProps {
   currentUser: User | null;
   onDataReset: () => void;
   onClearRecords: () => void;
+  onSwitchUser?: (user: User) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -44,8 +46,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   currentUser,
   onDataReset,
   onClearRecords,
+  onSwitchUser,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'villages' | 'users' | 'backup' | 'logs'>('profile');
+
+  // Sinkronkan data pengguna segar saat subtab akun dibuka
+  React.useEffect(() => {
+    if (activeSubTab === 'users') {
+      const fresh = StorageService.getUsers();
+      onUpdateUsers(fresh);
+    }
+  }, [activeSubTab]);
 
   // Facility Profile Form state
   const [profileForm, setProfileForm] = useState<FacilityProfile>({ ...facility });
@@ -739,14 +750,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* User List */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Daftar Akun Pengguna Terdaftar</h3>
+            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50/50">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <span>Daftar Akun Pengguna Terdaftar</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    {users.length} Akun
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Seluruh akun terdaftar yang aktif dan dapat login ke dalam aplikasi
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const fresh = StorageService.getUsers();
+                  onUpdateUsers(fresh);
+                  setStatusMessage({
+                    text: `Berhasil menyinkronkan ${fresh.length} akun pengguna dari sistem basis data.`,
+                    type: 'success',
+                  });
+                  setTimeout(() => setStatusMessage(null), 3000);
+                }}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition cursor-pointer shadow-2xs active:scale-95"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Segarkan Data Akun</span>
+              </button>
             </div>
             <div className="divide-y divide-slate-100">
               {users.map((u) => (
-                <div key={u.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition text-xs">
+                <div key={u.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition text-xs">
                   <div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       <span className="font-bold text-slate-900">{u.name}</span>
                       <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                         @{u.username}
@@ -761,16 +799,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Bidan Desa: {u.village}
                         </span>
                       )}
+                      {currentUser?.username === u.username && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                          (Sedang Aktif)
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      Password saat ini: <code className="bg-slate-100 px-1 rounded font-mono text-slate-600">{u.password}</code>
+                    <div className="text-[11px] text-slate-400 mt-1 flex items-center space-x-2">
+                      <span>Password: <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700 font-semibold">{u.password}</code></span>
+                      {u.nip && <span>• NIP: {u.nip}</span>}
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 self-end sm:self-center">
+                    {onSwitchUser && currentUser?.username !== u.username && (
+                      <button
+                        type="button"
+                        onClick={() => onSwitchUser(u)}
+                        className="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg font-medium flex items-center space-x-1 cursor-pointer transition active:scale-95"
+                        title={`Masuk langsung sebagai ${u.name}`}
+                      >
+                        <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Masuk Akun Ini</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => handleResetPassword(u)}
-                      className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium flex items-center space-x-1"
+                      className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium flex items-center space-x-1 cursor-pointer transition"
                     >
                       <KeyRound className="w-3.5 h-3.5" />
                       <span>Ubah Password</span>
@@ -778,7 +833,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     {u.username !== 'admin' && (
                       <button
                         onClick={() => handleDeleteUser(u.id, u.name)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                        title="Hapus Pengguna"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
