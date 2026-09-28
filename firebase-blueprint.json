@@ -87,9 +87,23 @@
         "details": { "type": "string" }
       },
       "required": ["id", "timestamp", "action", "user"]
+    },
+    "District": {
+      "title": "District",
+      "description": "Administrative district (kecamatan) in regency",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
     }
   },
   "firestore": {
+    "/districts/{districtId}": {
+      "schema": "District",
+      "description": "Administrative districts (kecamatan)"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "Registered user accounts across all devices"

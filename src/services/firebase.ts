@@ -12,7 +12,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { FacilityProfile, PatientRecord, User, Village } from '../types';
+import { District, FacilityProfile, PatientRecord, User, Village } from '../types';
 
 // Inisialisasi Firebase App
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -39,6 +39,7 @@ export async function testFirebaseConnection(): Promise<boolean> {
 const USERS_COL = 'users';
 const RECORDS_COL = 'records';
 const VILLAGES_COL = 'villages';
+const DISTRICTS_COL = 'districts';
 const FACILITY_COL = 'facility';
 const LOGS_COL = 'activity_logs';
 
@@ -164,6 +165,23 @@ export const FirestoreService = {
     );
   },
 
+  async saveVillage(village: Village): Promise<void> {
+    try {
+      const docRef = doc(db, VILLAGES_COL, village.id);
+      await setDoc(docRef, village, { merge: true });
+    } catch (e) {
+      console.error('Failed to save village to Firestore:', e);
+    }
+  },
+
+  async deleteVillage(villageId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, VILLAGES_COL, villageId));
+    } catch (e) {
+      console.error('Failed to delete village in Firestore:', e);
+    }
+  },
+
   async syncAllVillages(villages: Village[]): Promise<void> {
     try {
       const batch = writeBatch(db);
@@ -174,6 +192,54 @@ export const FirestoreService = {
       await batch.commit();
     } catch (e) {
       console.error('Failed syncAllVillages:', e);
+    }
+  },
+
+  // Sync Realtime Districts (Kecamatan)
+  subscribeDistricts(onUpdate: (districts: District[]) => void): Unsubscribe {
+    const colRef = collection(db, DISTRICTS_COL);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: District[] = [];
+          snapshot.forEach((d) => {
+            list.push(d.data() as District);
+          });
+          onUpdate(list);
+        }
+      },
+      (err) => console.error('Error subscribeDistricts:', err)
+    );
+  },
+
+  async saveDistrict(district: District): Promise<void> {
+    try {
+      const docRef = doc(db, DISTRICTS_COL, district.id);
+      await setDoc(docRef, district, { merge: true });
+    } catch (e) {
+      console.error('Failed to save district to Firestore:', e);
+    }
+  },
+
+  async deleteDistrict(districtId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, DISTRICTS_COL, districtId));
+    } catch (e) {
+      console.error('Failed to delete district in Firestore:', e);
+    }
+  },
+
+  async syncAllDistricts(districts: District[]): Promise<void> {
+    try {
+      const batch = writeBatch(db);
+      for (const d of districts) {
+        const docRef = doc(db, DISTRICTS_COL, d.id);
+        batch.set(docRef, d, { merge: true });
+      }
+      await batch.commit();
+    } catch (e) {
+      console.error('Failed syncAllDistricts:', e);
     }
   },
 
@@ -205,6 +271,7 @@ export const FirestoreService = {
     users: User[];
     records: PatientRecord[];
     villages: Village[];
+    districts?: District[];
     facility: FacilityProfile;
   }): Promise<void> {
     try {
@@ -221,6 +288,13 @@ export const FirestoreService = {
       const vilSnap = await getDocs(collection(db, VILLAGES_COL));
       if (vilSnap.empty) {
         await this.syncAllVillages(initialData.villages);
+      }
+
+      if (initialData.districts) {
+        const distSnap = await getDocs(collection(db, DISTRICTS_COL));
+        if (distSnap.empty) {
+          await this.syncAllDistricts(initialData.districts);
+        }
       }
 
       const facSnap = await getDocs(collection(db, FACILITY_COL));

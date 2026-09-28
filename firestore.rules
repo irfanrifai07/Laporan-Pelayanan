@@ -24,6 +24,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Districts collection
+    match /districts/{districtId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Healthcare facility profile
     match /facility/{facilityId} {
       allow read: if true;

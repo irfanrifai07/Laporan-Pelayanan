@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   MapPin,
   Sparkles,
+  Users,
 } from 'lucide-react';
 
 interface LoginModalProps {
@@ -54,6 +55,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   // Target district selector for Admin Induk Kabupaten
   const [targetDistrictForInduk, setTargetDistrictForInduk] = useState<string>('SEMUA');
+
+  // Toggle sembunyikan / tampilkan daftar akun (default sembunyi)
+  const [showQuickAccounts, setShowQuickAccounts] = useState(false);
 
   if (!isOpen) return null;
 
@@ -313,7 +317,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </div>
 
               {/* Pilihan Khusus: Admin Induk Menentukan Admin Kecamatan Mana Saja */}
-              {(username.trim().toLowerCase() === 'admin' || !username.trim()) && (
+              {username.trim().toLowerCase() === 'admin' && (
                 <div className="p-3.5 bg-gradient-to-br from-purple-50 via-slate-50 to-indigo-50 border border-purple-200/80 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-purple-950 text-xs flex items-center space-x-1.5">
@@ -388,127 +392,142 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <span>Masuk Sekarang</span>
               </button>
 
-              <div className="pt-3 border-t border-slate-100">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
-                  Masuk Cepat Menurut 3 Peran Pengguna:
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/80 transition text-left space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUsername('admin');
-                        setPassword('123');
-                        setTargetDistrictForInduk('SEMUA');
-                      }}
-                      className="w-full flex items-center justify-between cursor-pointer"
-                    >
-                      <div>
-                        <div className="font-bold text-purple-900 flex items-center space-x-1.5">
-                          <span>👑 1. Admin Induk Kabupaten</span>
-                          <span className="font-mono text-[10px] bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded font-semibold">@admin</span>
-                        </div>
-                        <p className="text-[10px] text-purple-700 mt-0.5">
-                          Mengendalikan seluruh sistem se-kabupaten & menentukan admin kecamatan mana saja
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-bold text-purple-800 bg-white px-2 py-0.5 rounded-lg border border-purple-200 shrink-0">
-                        Pilih &rarr;
-                      </span>
-                    </button>
+              {/* Sembunyikan / Tampilkan Daftar Akun */}
+              <div className="pt-2 border-t border-slate-100 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAccounts(!showQuickAccounts)}
+                  className="text-[11px] text-slate-400 hover:text-slate-600 transition inline-flex items-center space-x-1.5 cursor-pointer font-medium py-1 px-2.5 rounded-lg hover:bg-slate-50"
+                  title={showQuickAccounts ? 'Sembunyikan daftar akun' : 'Tampilkan daftar akun'}
+                >
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{showQuickAccounts ? 'Sembunyikan Daftar Akun' : 'Bantuan Info Akun Masuk'}</span>
+                </button>
 
-                    {/* Quick sub-buttons for Admin Induk to choose specific Kecamatan */}
-                    <div className="pt-1.5 border-t border-purple-200/60 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-purple-800">Tentukan Wilayah:</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUsername('admin');
-                          setPassword('123');
-                          setTargetDistrictForInduk('SEMUA');
-                        }}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold cursor-pointer border ${
-                          targetDistrictForInduk === 'SEMUA' && username === 'admin'
-                            ? 'bg-purple-700 text-white border-purple-800'
-                            : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-100'
-                        }`}
-                      >
-                        🌐 Semua Kecamatan
-                      </button>
-                      {districts.map((d) => (
+                {showQuickAccounts && (
+                  <div className="pt-2 text-left animate-fade-in space-y-2">
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
+                      Daftar Akun Menurut 3 Peran:
+                    </p>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/80 transition text-left space-y-2">
                         <button
-                          key={d.id}
                           type="button"
                           onClick={() => {
                             setUsername('admin');
                             setPassword('123');
-                            setTargetDistrictForInduk(d.name);
+                            setTargetDistrictForInduk('SEMUA');
                           }}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold cursor-pointer border ${
-                            targetDistrictForInduk === d.name && username === 'admin'
-                              ? 'bg-purple-700 text-white border-purple-800'
-                              : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-100'
-                          }`}
+                          className="w-full flex items-center justify-between cursor-pointer"
                         >
-                          🏢 Kec. {d.name}
+                          <div>
+                            <div className="font-bold text-purple-900 flex items-center space-x-1.5">
+                              <span>👑 1. Admin Induk Kabupaten</span>
+                              <span className="font-mono text-[10px] bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded font-semibold">@admin</span>
+                            </div>
+                            <p className="text-[10px] text-purple-700 mt-0.5">
+                              Mengendalikan seluruh sistem se-kabupaten & menentukan admin kecamatan mana saja
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-purple-800 bg-white px-2 py-0.5 rounded-lg border border-purple-200 shrink-0">
+                            Pilih &rarr;
+                          </span>
                         </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="p-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 transition text-left space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-blue-900 flex items-center space-x-1.5">
-                          <span>🏢 2. Admin Kecamatan</span>
-                          <span className="text-[10px] text-blue-700">({kecamatanUsers.length} Terdaftar)</span>
+                        {/* Quick sub-buttons for Admin Induk to choose specific Kecamatan */}
+                        <div className="pt-1.5 border-t border-purple-200/60 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-purple-800">Tentukan Wilayah:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUsername('admin');
+                              setPassword('123');
+                              setTargetDistrictForInduk('SEMUA');
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold cursor-pointer border ${
+                              targetDistrictForInduk === 'SEMUA' && username === 'admin'
+                                ? 'bg-purple-700 text-white border-purple-800'
+                                : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-100'
+                            }`}
+                          >
+                            🌐 Semua Kecamatan
+                          </button>
+                          {districts.map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => {
+                                setUsername('admin');
+                                setPassword('123');
+                                setTargetDistrictForInduk(d.name);
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold cursor-pointer border ${
+                                targetDistrictForInduk === d.name && username === 'admin'
+                                  ? 'bg-purple-700 text-white border-purple-800'
+                                  : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-100'
+                              }`}
+                            >
+                              🏢 Kec. {d.name}
+                            </button>
+                          ))}
                         </div>
-                        <p className="text-[10px] text-blue-700 mt-0.5">
-                          Pilih langsung salah satu akun Admin Kecamatan di bawah:
-                        </p>
                       </div>
-                    </div>
 
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {kecamatanUsers.map((ku) => (
-                        <button
-                          key={ku.id}
-                          type="button"
-                          onClick={() => {
-                            setUsername(ku.username);
-                            setPassword(ku.password || '123');
-                          }}
-                          className="px-2.5 py-1 bg-white hover:bg-blue-100/70 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition active:scale-95"
-                        >
-                          <span>Kec. {ku.district || 'Sambungmacan'}</span>
-                          <span className="font-mono text-[9px] text-blue-600 bg-blue-50 px-1 rounded">@{ku.username}</span>
-                        </button>
-                      ))}
+                      <div className="p-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 transition text-left space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-blue-900 flex items-center space-x-1.5">
+                              <span>🏢 2. Admin Kecamatan</span>
+                              <span className="text-[10px] text-blue-700">({kecamatanUsers.length} Terdaftar)</span>
+                            </div>
+                            <p className="text-[10px] text-blue-700 mt-0.5">
+                              Pilih salah satu akun Admin Kecamatan:
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {kecamatanUsers.map((ku) => (
+                            <button
+                              key={ku.id}
+                              type="button"
+                              onClick={() => {
+                                setUsername(ku.username);
+                                setPassword(ku.password || '123');
+                              }}
+                              className="px-2.5 py-1 bg-white hover:bg-blue-100/70 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition active:scale-95"
+                            >
+                              <span>Kec. {ku.district || 'Sambungmacan'}</span>
+                              <span className="font-mono text-[9px] text-blue-600 bg-blue-50 px-1 rounded">@{ku.username}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername('duyungan');
+                          setPassword('123');
+                        }}
+                        className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/80 transition text-left flex items-center justify-between cursor-pointer"
+                      >
+                        <div>
+                          <div className="font-bold text-emerald-900 flex items-center space-x-1.5">
+                            <span>🌿 3. Admin Desa</span>
+                            <span className="font-mono text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">@duyungan</span>
+                          </div>
+                          <p className="text-[10px] text-emerald-700 mt-0.5">
+                            Tugas khusus untuk menentri data register pelayanan KB di desanya
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200">
+                          Pilih &rarr;
+                        </span>
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsername('duyungan');
-                      setPassword('123');
-                    }}
-                    className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/80 transition text-left flex items-center justify-between cursor-pointer"
-                  >
-                    <div>
-                      <div className="font-bold text-emerald-900 flex items-center space-x-1.5">
-                        <span>🌿 3. Admin Desa</span>
-                        <span className="font-mono text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">@duyungan</span>
-                      </div>
-                      <p className="text-[10px] text-emerald-700 mt-0.5">
-                        Tugas khusus untuk menentri data register pelayanan KB di desanya
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200">
-                      Pilih &rarr;
-                    </span>
-                  </button>
-                </div>
+                )}
               </div>
 
               <div className="pt-2 text-center border-t border-slate-100">

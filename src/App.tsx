@@ -154,6 +154,12 @@ export default function App() {
     StorageService.saveUsers(newUsers);
   };
 
+  // Districts update (langsung tersimpan)
+  const handleUpdateDistricts = (newDistricts: District[]) => {
+    setDistricts(newDistricts);
+    StorageService.saveDistricts(newDistricts);
+  };
+
   // Sinkronisasi Realtime Cloud Firebase (Otomatis tersambung HP & PC)
   useEffect(() => {
     // 1. Tes koneksi awal
@@ -164,6 +170,7 @@ export default function App() {
       users: StorageService.getUsers(),
       records: StorageService.getRecords(),
       villages: StorageService.getVillages(),
+      districts: StorageService.getDistricts(),
       facility: StorageService.getFacilityProfile(),
     });
 
@@ -189,6 +196,13 @@ export default function App() {
       }
     });
 
+    const unsubDistricts = FirestoreService.subscribeDistricts((cloudDistricts) => {
+      if (cloudDistricts && cloudDistricts.length > 0) {
+        StorageService.saveDistrictsLocallyOnly(cloudDistricts);
+        setDistricts(cloudDistricts);
+      }
+    });
+
     const unsubFacility = FirestoreService.subscribeFacility((cloudFac) => {
       if (cloudFac) {
         StorageService.saveFacilityProfileLocallyOnly(cloudFac);
@@ -200,6 +214,7 @@ export default function App() {
       unsubUsers();
       unsubRecords();
       unsubVillages();
+      unsubDistricts();
       unsubFacility();
     };
   }, []);
@@ -209,6 +224,7 @@ export default function App() {
     setUsers(StorageService.getUsers());
     setRecords(StorageService.getRecords());
     setVillages(StorageService.getVillages());
+    setDistricts(StorageService.getDistricts());
     setFacility(StorageService.getFacilityProfile());
   }, [activeTab]);
 
@@ -222,6 +238,8 @@ export default function App() {
         setFacility(StorageService.getFacilityProfile());
       } else if (e.key.includes('villages')) {
         setVillages(StorageService.getVillages());
+      } else if (e.key.includes('districts')) {
+        setDistricts(StorageService.getDistricts());
       } else if (e.key.includes('users')) {
         setUsers(StorageService.getUsers());
       } else if (e.key.includes('current_user')) {
@@ -335,6 +353,8 @@ export default function App() {
               onUpdateFacility={handleUpdateFacility}
               villages={villages}
               onUpdateVillages={handleUpdateVillages}
+              districts={districts}
+              onUpdateDistricts={handleUpdateDistricts}
               users={users}
               onUpdateUsers={handleUpdateUsers}
               currentUser={currentUser}

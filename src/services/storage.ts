@@ -102,6 +102,25 @@ export const StorageService = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.VILLAGES)) {
       safeSet(STORAGE_KEYS.VILLAGES, initialVillages);
+    } else {
+      const curVillages = safeGet<Village[]>(STORAGE_KEYS.VILLAGES, []);
+      let vilChanged = false;
+      const updatedVillages = curVillages.map((v) => {
+        if (!v.district) {
+          vilChanged = true;
+          return { ...v, district: initialFacilityProfile.district };
+        }
+        return v;
+      });
+      initialVillages.forEach((iv) => {
+        if (!updatedVillages.some((v) => v.name.toLowerCase() === iv.name.toLowerCase())) {
+          updatedVillages.push(iv);
+          vilChanged = true;
+        }
+      });
+      if (vilChanged) {
+        safeSet(STORAGE_KEYS.VILLAGES, updatedVillages);
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.DISTRICTS)) {
       safeSet(STORAGE_KEYS.DISTRICTS, initialDistricts);
@@ -196,13 +215,41 @@ export const StorageService = {
     safeSet(STORAGE_KEYS.VILLAGES, villages);
     FirestoreService.syncAllVillages(villages);
   },
+  saveSingleVillage(village: Village): void {
+    const list = this.getVillages();
+    const updated = [...list.filter((v) => v.id !== village.id), village];
+    this.saveVillagesLocallyOnly(updated);
+    FirestoreService.saveVillage(village);
+  },
+  deleteVillage(villageId: string): void {
+    const list = this.getVillages();
+    const filtered = list.filter((v) => v.id !== villageId);
+    this.saveVillagesLocallyOnly(filtered);
+    FirestoreService.deleteVillage(villageId);
+  },
 
   // DISTRICTS
   getDistricts(): District[] {
     return safeGet<District[]>(STORAGE_KEYS.DISTRICTS, initialDistricts);
   },
+  saveDistrictsLocallyOnly(districts: District[]): void {
+    safeSet(STORAGE_KEYS.DISTRICTS, districts);
+  },
   saveDistricts(districts: District[]): void {
     safeSet(STORAGE_KEYS.DISTRICTS, districts);
+    FirestoreService.syncAllDistricts(districts);
+  },
+  saveSingleDistrict(district: District): void {
+    const list = this.getDistricts();
+    const updated = [...list.filter((d) => d.id !== district.id), district];
+    this.saveDistrictsLocallyOnly(updated);
+    FirestoreService.saveDistrict(district);
+  },
+  deleteDistrict(districtId: string): void {
+    const list = this.getDistricts();
+    const filtered = list.filter((d) => d.id !== districtId);
+    this.saveDistrictsLocallyOnly(filtered);
+    FirestoreService.deleteDistrict(districtId);
   },
 
   // PATIENT RECORDS
