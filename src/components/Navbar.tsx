@@ -38,19 +38,41 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (!user) return 'Tamu';
     switch (user.role) {
       case 'admin_induk':
+        return 'Admin Induk (Puskesmas)';
       case 'admin_kecamatan':
-        return 'Admin Induk';
+        return 'Admin Kecamatan';
       case 'bidan_desa':
-        return `Bidan Desa ${user.village || ''}`;
+        return `User Desa: ${user.village || 'Bidan'}`;
     }
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Beranda', icon: Home, short: 'Beranda' },
-    { id: 'register', label: 'Data Pasien KB', icon: Users, short: 'Pasien KB' },
-    { id: 'rekapitulasi', label: 'Laporan Bulanan', icon: FileSpreadsheet, short: 'Laporan F2' },
-    { id: 'admin', label: 'Pengaturan', icon: Settings, short: 'Pengaturan' },
-  ] as const;
+  const navItems = (() => {
+    if (currentUser?.role === 'bidan_desa') {
+      // User Desa tugasnya khusus untuk menentri saja
+      return [
+        { id: 'register', label: 'Entri Pasien KB', icon: Users, short: 'Entri KB' },
+        { id: 'dashboard', label: 'Beranda Desa', icon: Home, short: 'Beranda' },
+      ] as const;
+    }
+
+    if (currentUser?.role === 'admin_kecamatan') {
+      // Admin Kecamatan yang membawahi user desa
+      return [
+        { id: 'dashboard', label: 'Beranda', icon: Home, short: 'Beranda' },
+        { id: 'register', label: 'Data Pasien KB', icon: Users, short: 'Pasien KB' },
+        { id: 'rekapitulasi', label: 'Laporan Bulanan', icon: FileSpreadsheet, short: 'Laporan F2' },
+        { id: 'admin', label: 'Kelola User Desa', icon: Settings, short: 'User Desa' },
+      ] as const;
+    }
+
+    // Default: Admin Induk yang mengendalikan semuanya
+    return [
+      { id: 'dashboard', label: 'Beranda', icon: Home, short: 'Beranda' },
+      { id: 'register', label: 'Data Pasien KB', icon: Users, short: 'Pasien KB' },
+      { id: 'rekapitulasi', label: 'Laporan Bulanan', icon: FileSpreadsheet, short: 'Laporan F2' },
+      { id: 'admin', label: 'Pengaturan Sistem', icon: Settings, short: 'Pengaturan' },
+    ] as const;
+  })();
 
   return (
     <>
@@ -140,14 +162,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="flex items-center space-x-2 py-1.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition text-left"
                     title="Ganti Peran / Akun Pengguna"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                        currentUser.role === 'admin_induk'
+                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                          : currentUser.role === 'admin_kecamatan'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      }`}
+                    >
                       {currentUser.name.charAt(0)}
                     </div>
                     <div className="hidden sm:block">
                       <div className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
                         {currentUser.name}
                       </div>
-                      <div className="text-[10px] text-emerald-700 font-medium">
+                      <div
+                        className={`text-[10px] font-semibold ${
+                          currentUser.role === 'admin_induk'
+                            ? 'text-purple-700'
+                            : currentUser.role === 'admin_kecamatan'
+                            ? 'text-blue-700'
+                            : 'text-emerald-700'
+                        }`}
+                      >
                         {getRoleLabel(currentUser)}
                       </div>
                     </div>

@@ -301,6 +301,79 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <span>Masuk Sekarang</span>
               </button>
 
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
+                  Masuk Cepat Menurut 3 Peran Pengguna:
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('admin');
+                      setPassword('123');
+                    }}
+                    className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/80 transition text-left flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-bold text-purple-900 flex items-center space-x-1.5">
+                        <span>👑 1. Admin Induk</span>
+                        <span className="font-mono text-[10px] bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded font-semibold">@admin</span>
+                      </div>
+                      <p className="text-[10px] text-purple-700 mt-0.5">
+                        Mengendalikan seluruh sistem, faskes, profil, & database
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-800 bg-white px-2 py-0.5 rounded-lg border border-purple-200">
+                      Pilih &rarr;
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('adminkec');
+                      setPassword('123');
+                    }}
+                    className="p-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 transition text-left flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-bold text-blue-900 flex items-center space-x-1.5">
+                        <span>🏢 2. Admin Kecamatan</span>
+                        <span className="font-mono text-[10px] bg-blue-200/80 text-blue-900 px-1.5 py-0.2 rounded font-semibold">@adminkec</span>
+                      </div>
+                      <p className="text-[10px] text-blue-700 mt-0.5">
+                        Membawahi & mengawasi seluruh user desa di kecamatan
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-800 bg-white px-2 py-0.5 rounded-lg border border-blue-200">
+                      Pilih &rarr;
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('duyungan');
+                      setPassword('123');
+                    }}
+                    className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/80 transition text-left flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-bold text-emerald-900 flex items-center space-x-1.5">
+                        <span>🌿 3. User Desa</span>
+                        <span className="font-mono text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">@duyungan</span>
+                      </div>
+                      <p className="text-[10px] text-emerald-700 mt-0.5">
+                        Tugas khusus untuk menentri data register pelayanan KB
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200">
+                      Pilih &rarr;
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               <div className="pt-2 text-center border-t border-slate-100">
                 <p className="text-slate-500">
                   Belum memiliki akun?{' '}
@@ -358,16 +431,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Peran / Jabatan <span className="text-rose-500">*</span>
+                    Peran Pengguna (Role) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <select
                       value={regRole}
                       onChange={(e) => setRegRole(e.target.value as Role)}
-                      className="w-full py-2 pl-8 pr-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                      className="w-full py-2 pl-8 pr-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-medium"
                     >
-                      <option value="bidan_desa">Bidan Desa</option>
-                      <option value="admin_induk">Admin Induk (Puskesmas / Koordinator KB)</option>
+                      <option value="bidan_desa">🌿 User Desa (Tugas Khusus Entri Data)</option>
+                      <option value="admin_kecamatan">🏢 Admin Kecamatan (Membawahi User Desa)</option>
+                      <option value="admin_induk">👑 Admin Induk (Mengendalikan Semuanya)</option>
                     </select>
                     <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
                   </div>

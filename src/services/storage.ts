@@ -88,23 +88,14 @@ export const StorageService = {
   // USERS
   getUsers(): User[] {
     const list = safeGet<User[]>(STORAGE_KEYS.USERS, initialUsers);
-    // Satukan semua jenis admin menjadi Admin Induk
-    return list.map((u) =>
-      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
-    );
+    return list;
   },
   saveUsersLocallyOnly(users: User[]): void {
-    const unified = users.map((u) =>
-      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
-    );
-    safeSet(STORAGE_KEYS.USERS, unified);
+    safeSet(STORAGE_KEYS.USERS, users);
   },
   saveUsers(users: User[]): void {
-    const unified = users.map((u) =>
-      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
-    );
-    safeSet(STORAGE_KEYS.USERS, unified);
-    FirestoreService.syncAllUsers(unified);
+    safeSet(STORAGE_KEYS.USERS, users);
+    FirestoreService.syncAllUsers(users);
   },
   saveSingleUser(user: User): void {
     const users = this.getUsers();
@@ -119,12 +110,7 @@ export const StorageService = {
     FirestoreService.deleteUser(userId);
   },
   getCurrentUser(): User | null {
-    const u = safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    if (!u) return null;
-    if (u.role === ('admin_kecamatan' as any)) {
-      return { ...u, role: 'admin_induk' as Role };
-    }
-    return u;
+    return safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
   },
   setCurrentUser(user: User | null): void {
     if (user) {

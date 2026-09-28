@@ -10,7 +10,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { RegisterFormModal } from './components/RegisterFormModal';
 import { PrintRegisterModal } from './components/PrintRegisterModal';
 import { LoginModal } from './components/LoginModal';
-import { CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
 export default function App() {
   // Initialize storage
@@ -106,7 +106,14 @@ export default function App() {
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
-    showToast(`Selamat datang kembali, ${user.name}!`);
+    if (user.role === 'bidan_desa') {
+      setActiveTab('register');
+      showToast(`Masuk sebagai User Desa (${user.village || 'Entri Pelayanan'}). Silakan lakukan entri data pasien KB.`);
+    } else if (user.role === 'admin_kecamatan') {
+      showToast(`Masuk sebagai Admin Kecamatan. Membawahi seluruh user desa.`);
+    } else {
+      showToast(`Masuk sebagai Admin Induk. Mengendalikan seluruh sistem faskes.`);
+    }
   };
 
   // Profile update (langsung tersimpan)
@@ -282,22 +289,41 @@ export default function App() {
         )}
 
         {activeTab === 'admin' && (
-          <AdminPanel
-            facility={facility}
-            onUpdateFacility={handleUpdateFacility}
-            villages={villages}
-            onUpdateVillages={handleUpdateVillages}
-            users={users}
-            onUpdateUsers={handleUpdateUsers}
-            currentUser={currentUser}
-            onDataReset={handleDataReset}
-            onClearRecords={handleClearRecords}
-            onSwitchUser={(targetUser) => {
-              StorageService.setCurrentUser(targetUser);
-              handleLoginSuccess(targetUser);
-              showToast(`Beralih akun: Sekarang Anda masuk sebagai ${targetUser.name}`);
-            }}
-          />
+          currentUser?.role === 'bidan_desa' ? (
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4 animate-fade-in">
+              <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200">
+                <Shield className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Akses Pengaturan Khusus Admin</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Akun Anda terdaftar sebagai <strong className="text-slate-800">User Desa ({currentUser.village || 'Bidan'})</strong> dengan tugas khusus untuk <strong className="text-slate-800">menentri data pelayanan register KB</strong>.
+                Pengelolaan profil fasilitas dan akun pengguna dibawahi oleh Admin Kecamatan dan Admin Induk.
+              </p>
+              <button
+                onClick={() => setActiveTab('register')}
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <span>Buka Menu Entri Data Pasien KB &rarr;</span>
+              </button>
+            </div>
+          ) : (
+            <AdminPanel
+              facility={facility}
+              onUpdateFacility={handleUpdateFacility}
+              villages={villages}
+              onUpdateVillages={handleUpdateVillages}
+              users={users}
+              onUpdateUsers={handleUpdateUsers}
+              currentUser={currentUser}
+              onDataReset={handleDataReset}
+              onClearRecords={handleClearRecords}
+              onSwitchUser={(targetUser) => {
+                StorageService.setCurrentUser(targetUser);
+                handleLoginSuccess(targetUser);
+                showToast(`Beralih akun: Sekarang Anda masuk sebagai ${targetUser.name}`);
+              }}
+            />
+          )
         )}
       </main>
 

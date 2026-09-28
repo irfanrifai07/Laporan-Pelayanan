@@ -8,7 +8,7 @@
         "id": { "type": "string" },
         "username": { "type": "string" },
         "password": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin_induk", "bidan_desa"] },
+        "role": { "type": "string", "enum": ["admin_induk", "admin_kecamatan", "bidan_desa"] },
         "name": { "type": "string" },
         "phone": { "type": "string" },
         "nip": { "type": "string" },
