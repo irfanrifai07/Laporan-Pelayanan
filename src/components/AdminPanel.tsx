@@ -51,6 +51,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [profileForm, setProfileForm] = useState<FacilityProfile>({ ...facility });
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
 
+  // Real-time instant auto-save whenever any profile field changes
+  const handleProfileChange = (field: keyof FacilityProfile, value: string) => {
+    const updated = { ...profileForm, [field]: value };
+    setProfileForm(updated);
+    onUpdateFacility(updated);
+    StorageService.saveFacilityProfile(updated);
+    setProfileSaveSuccess(true);
+    setTimeout(() => setProfileSaveSuccess(false), 2000);
+  };
+
   // Village Form states
   const [editingVillage, setEditingVillage] = useState<Village | null>(null);
   const [newVillageName, setNewVillageName] = useState('');
@@ -317,12 +327,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 Informasi ini akan tercetak otomatis pada Kop Surat dan Lembar Laporan Formulir F/II/KB
               </p>
             </div>
-            {profileSaveSuccess && (
-              <span className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full font-bold border border-emerald-200 animate-fade-in flex items-center space-x-1">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Profil Berhasil Disimpan!</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-bold border border-emerald-200 flex items-center space-x-1.5 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Tersimpan Otomatis</span>
               </span>
-            )}
+              {profileSaveSuccess && (
+                <span className="text-xs text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full font-bold border border-emerald-300 animate-fade-in flex items-center space-x-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Tersimpan!</span>
+                </span>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -334,7 +350,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  onChange={(e) => handleProfileChange('name', e.target.value)}
                   required
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                 />
@@ -347,7 +363,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.k0kbCode}
-                  onChange={(e) => setProfileForm({ ...profileForm, k0kbCode: e.target.value })}
+                  onChange={(e) => handleProfileChange('k0kbCode', e.target.value)}
                   required
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:bg-white"
                 />
@@ -360,7 +376,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.code}
-                  onChange={(e) => setProfileForm({ ...profileForm, code: e.target.value })}
+                  onChange={(e) => handleProfileChange('code', e.target.value)}
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:bg-white"
                 />
               </div>
@@ -372,7 +388,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.district}
-                  onChange={(e) => setProfileForm({ ...profileForm, district: e.target.value })}
+                  onChange={(e) => handleProfileChange('district', e.target.value)}
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                 />
               </div>
@@ -384,7 +400,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.regency}
-                  onChange={(e) => setProfileForm({ ...profileForm, regency: e.target.value })}
+                  onChange={(e) => handleProfileChange('regency', e.target.value)}
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                 />
               </div>
@@ -396,7 +412,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.address}
-                  onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                  onChange={(e) => handleProfileChange('address', e.target.value)}
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                 />
               </div>
@@ -408,7 +424,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input
                   type="text"
                   value={profileForm.province}
-                  onChange={(e) => setProfileForm({ ...profileForm, province: e.target.value })}
+                  onChange={(e) => handleProfileChange('province', e.target.value)}
                   className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
                 />
               </div>
@@ -428,7 +444,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.headName}
-                      onChange={(e) => setProfileForm({ ...profileForm, headName: e.target.value })}
+                      onChange={(e) => handleProfileChange('headName', e.target.value)}
                       required
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md"
                     />
@@ -438,7 +454,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.headNip}
-                      onChange={(e) => setProfileForm({ ...profileForm, headNip: e.target.value })}
+                      onChange={(e) => handleProfileChange('headNip', e.target.value)}
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md font-mono"
                     />
                   </div>
@@ -447,7 +463,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.headTitle}
-                      onChange={(e) => setProfileForm({ ...profileForm, headTitle: e.target.value })}
+                      onChange={(e) => handleProfileChange('headTitle', e.target.value)}
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md"
                     />
                   </div>
@@ -461,7 +477,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.kbCoordinatorName}
-                      onChange={(e) => setProfileForm({ ...profileForm, kbCoordinatorName: e.target.value })}
+                      onChange={(e) => handleProfileChange('kbCoordinatorName', e.target.value)}
                       required
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md"
                     />
@@ -471,7 +487,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.kbCoordinatorNip}
-                      onChange={(e) => setProfileForm({ ...profileForm, kbCoordinatorNip: e.target.value })}
+                      onChange={(e) => handleProfileChange('kbCoordinatorNip', e.target.value)}
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md font-mono"
                     />
                   </div>
@@ -480,7 +496,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <input
                       type="text"
                       value={profileForm.kbCoordinatorTitle}
-                      onChange={(e) => setProfileForm({ ...profileForm, kbCoordinatorTitle: e.target.value })}
+                      onChange={(e) => handleProfileChange('kbCoordinatorTitle', e.target.value)}
                       className="w-full text-xs py-1.5 px-2.5 bg-white border border-slate-300 rounded-md"
                     />
                   </div>

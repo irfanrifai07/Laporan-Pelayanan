@@ -108,23 +108,58 @@ export default function App() {
     showToast(`Selamat datang kembali, ${user.name}!`);
   };
 
-  // Profile update
+  // Profile update (langsung tersimpan)
   const handleUpdateFacility = (newFac: FacilityProfile) => {
     setFacility(newFac);
-    showToast('Profil Faskes berhasil diperbarui.');
+    StorageService.saveFacilityProfile(newFac);
   };
 
-  // Villages update
+  // Villages update (langsung tersimpan)
   const handleUpdateVillages = (newV: Village[]) => {
     setVillages(newV);
-    showToast('Data Desa & Status Izin berhasil diperbarui.');
+    StorageService.saveVillages(newV);
   };
 
-  // Users update
+  // Users update (langsung tersimpan)
   const handleUpdateUsers = (newUsers: User[]) => {
     setUsers(newUsers);
-    showToast('Daftar Akun Pengguna berhasil diperbarui.');
+    StorageService.saveUsers(newUsers);
   };
+
+  // Real-time auto-persistence: pastikan apapun yang diupdate langsung tersimpan ke localStorage
+  useEffect(() => {
+    StorageService.saveFacilityProfile(facility);
+  }, [facility]);
+
+  useEffect(() => {
+    StorageService.saveVillages(villages);
+  }, [villages]);
+
+  useEffect(() => {
+    StorageService.saveUsers(users);
+  }, [users]);
+
+  useEffect(() => {
+    StorageService.saveRecords(records);
+  }, [records]);
+
+  // Cross-tab storage listener
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === 'kb_faskes_patient_records_v2') {
+        setRecords(StorageService.getRecords());
+      } else if (e.key === 'kb_faskes_facility_profile_v1') {
+        setFacility(StorageService.getFacilityProfile());
+      } else if (e.key === 'kb_faskes_villages_v1') {
+        setVillages(StorageService.getVillages());
+      } else if (e.key === 'kb_faskes_users_v1') {
+        setUsers(StorageService.getUsers());
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Clear all patient records
   const handleClearRecords = () => {
