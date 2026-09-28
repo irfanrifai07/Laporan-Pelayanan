@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FacilityProfile, PatientRecord, User, Village } from './types';
+import { District, FacilityProfile, PatientRecord, User, Village } from './types';
 import { StorageService } from './services/storage';
 import { FirestoreService, testFirebaseConnection } from './services/firebase';
 import { Navbar } from './components/Navbar';
@@ -7,7 +7,6 @@ import { Dashboard } from './components/Dashboard';
 import { RegisterTable } from './components/RegisterTable';
 import { RekapitulasiF2KB } from './components/RekapitulasiF2KB';
 import { AdminPanel } from './components/AdminPanel';
-import { RoleWorkspaceBanner } from './components/RoleWorkspaceBanner';
 import { RegisterFormModal } from './components/RegisterFormModal';
 import { PrintRegisterModal } from './components/PrintRegisterModal';
 import { LoginModal } from './components/LoginModal';
@@ -34,6 +33,11 @@ export default function App() {
     return StorageService.getVillages();
   });
 
+  const [districts, setDistricts] = useState<District[]>(() => {
+    StorageService.init();
+    return StorageService.getDistricts();
+  });
+
   const [users, setUsers] = useState<User[]>(() => {
     StorageService.init();
     return StorageService.getUsers();
@@ -43,6 +47,21 @@ export default function App() {
     StorageService.init();
     return StorageService.getRecords();
   });
+
+  const handleSelectDistrict = (districtName: string) => {
+    if (!currentUser) return;
+    const updatedUser: User = {
+      ...currentUser,
+      district: districtName === 'SEMUA' ? undefined : districtName,
+    };
+    setCurrentUser(updatedUser);
+    StorageService.setCurrentUser(updatedUser);
+    showToast(
+      districtName === 'SEMUA'
+        ? '👑 Mode Pengawasan: Semua Kecamatan se-Kabupaten'
+        : `🏢 Beralih ke Pengawasan: Kecamatan ${districtName}`
+    );
+  };
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<'dashboard' | 'register' | 'rekapitulasi' | 'admin'>('dashboard');
@@ -253,23 +272,14 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         facility={facility}
+        districts={districts}
+        onSelectDistrict={handleSelectDistrict}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
       />
 
       {/* Main App Content Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Banner Identitas & Ruang Kerja Peran (Tampilan Berbeda Setiap Akun) */}
-        <RoleWorkspaceBanner
-          currentUser={currentUser}
-          facility={facility}
-          records={records}
-          villages={villages}
-          users={users}
-          onOpenNewRecord={handleOpenNew}
-          onNavigateTab={(tab) => setActiveTab(tab)}
-        />
-
         {activeTab === 'dashboard' && (
           <Dashboard
             records={records}
@@ -302,15 +312,15 @@ export default function App() {
         )}
 
         {activeTab === 'admin' && (
-          currentUser?.role === 'bidan_desa' ? (
+          (currentUser?.role === 'admin_desa' || currentUser?.role === 'bidan_desa') ? (
             <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4 animate-fade-in">
               <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200">
                 <Shield className="w-7 h-7" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Akses Pengaturan Khusus Admin</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Akun Anda terdaftar sebagai <strong className="text-slate-800">User Desa ({currentUser.village || 'Bidan'})</strong> dengan tugas khusus untuk <strong className="text-slate-800">menentri data pelayanan register KB</strong>.
-                Pengelolaan profil fasilitas dan akun pengguna dibawahi oleh Admin Kecamatan dan Admin Induk.
+                Akun Anda terdaftar sebagai <strong className="text-slate-800">Admin Desa ({currentUser.village || 'Desa'})</strong> dengan tugas khusus untuk <strong className="text-slate-800">menentri data pelayanan register KB</strong>.
+                Pengelolaan profil instansi dan seluruh akun dibawahi oleh Admin Kecamatan dan Admin Induk Kabupaten.
               </p>
               <button
                 onClick={() => setActiveTab('register')}

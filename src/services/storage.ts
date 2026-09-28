@@ -56,15 +56,68 @@ export const StorageService = {
 
     if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
       safeSet(STORAGE_KEYS.USERS, initialUsers);
+    } else {
+      // Upgrade any existing cached users to new role hierarchy
+      const existingUsers = safeGet<User[]>(STORAGE_KEYS.USERS, []);
+      let changed = false;
+      const updated = existingUsers.map((u) => {
+        if (u.username === 'admin' && u.name !== 'Administrator Induk Kabupaten') {
+          changed = true;
+          return { ...u, name: 'Administrator Induk Kabupaten', role: 'admin_induk' as Role };
+        }
+        if (u.role === 'admin_kecamatan' && !u.district) {
+          changed = true;
+          return { ...u, district: 'Sambungmacan' };
+        }
+        if (u.role === 'bidan_desa') {
+          changed = true;
+          return { ...u, role: 'admin_desa' as Role };
+        }
+        return u;
+      });
+
+      // Merge any new default kecamatan accounts if missing
+      initialUsers.forEach((defU) => {
+        if (!updated.some((u) => u.username === defU.username)) {
+          updated.push(defU);
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        safeSet(STORAGE_KEYS.USERS, updated);
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
       safeSet(STORAGE_KEYS.CURRENT_USER, initialUsers[0]); // default admin
+    } else {
+      const cur = safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+      if (cur) {
+        if (cur.username === 'admin' && cur.name !== 'Administrator Induk Kabupaten') {
+          safeSet(STORAGE_KEYS.CURRENT_USER, { ...cur, name: 'Administrator Induk Kabupaten', role: 'admin_induk' });
+        } else if (cur.role === 'bidan_desa') {
+          safeSet(STORAGE_KEYS.CURRENT_USER, { ...cur, role: 'admin_desa' });
+        }
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.VILLAGES)) {
       safeSet(STORAGE_KEYS.VILLAGES, initialVillages);
     }
     if (!localStorage.getItem(STORAGE_KEYS.DISTRICTS)) {
       safeSet(STORAGE_KEYS.DISTRICTS, initialDistricts);
+    } else {
+      // Merge districts
+      const curDistricts = safeGet<District[]>(STORAGE_KEYS.DISTRICTS, []);
+      let distChanged = false;
+      initialDistricts.forEach((d) => {
+        if (!curDistricts.some((cd) => cd.name.toLowerCase() === d.name.toLowerCase())) {
+          curDistricts.push(d);
+          distChanged = true;
+        }
+      });
+      if (distChanged) {
+        safeSet(STORAGE_KEYS.DISTRICTS, curDistricts);
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
       safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);

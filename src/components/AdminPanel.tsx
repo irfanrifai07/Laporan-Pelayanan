@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityLog, FacilityProfile, User, Village } from '../types';
+import { ActivityLog, FacilityProfile, Role, User, Village } from '../types';
 import { StorageService } from '../services/storage';
 import {
   Building2,
@@ -49,7 +49,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSwitchUser,
 }) => {
   const isKecamatanAdmin = currentUser?.role === 'admin_kecamatan';
-  const isSuperAdmin = currentUser?.role === 'admin_induk' || !currentUser;
+  const isSuperAdmin = currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten' || !currentUser;
 
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'villages' | 'users' | 'backup' | 'logs'>(
     isKecamatanAdmin ? 'users' : 'profile'
@@ -86,8 +86,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('123');
   const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState<'admin_induk' | 'admin_kecamatan' | 'bidan_desa'>('bidan_desa');
+  const [newRole, setNewRole] = useState<Role>('admin_desa');
   const [newVillageAssign, setNewVillageAssign] = useState(villages[0]?.name || '');
+  const districts = StorageService.getDistricts();
+  const [newDistrictAssign, setNewDistrictAssign] = useState(districts[0]?.name || facility.district);
 
   // Status message
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -185,7 +187,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       password: cleanPass,
       role: newRole,
       name: cleanName,
-      village: newRole === 'bidan_desa' ? newVillageAssign : undefined,
+      district: newRole === 'admin_kecamatan' ? newDistrictAssign : undefined,
+      village: (newRole === 'admin_desa' || newRole === 'bidan_desa') ? newVillageAssign : undefined,
     };
 
     const updated = [...users, newU];
@@ -293,14 +296,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <Shield className="w-5 h-5 text-emerald-600" />
             <span>
               {isKecamatanAdmin
-                ? '🏢 Panel Pengawasan Wilayah & Manajemen User Desa'
-                : '👑 Panel Pengaturan Faskes & Kendali Seluruh Sistem'}
+                ? '🏢 Panel Pengawasan Wilayah & Manajemen Admin Desa'
+                : '👑 Panel Pengaturan Faskes & Kendali Admin Induk Kabupaten'}
             </span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {isKecamatanAdmin
-              ? 'Membawahi seluruh akun User Desa (Petugas Entri), status desa binaan, dan riwayat entri pelayanan di kecamatan'
-              : 'Mengendalikan seluruh konfigurasi profil faskes, pimpinan, akun pengguna, wilayah, pencadangan & pemulihan sistem'}
+              ? 'Membawahi seluruh akun Admin Desa (Petugas Entri), status desa binaan, dan riwayat entri pelayanan di kecamatan'
+              : 'Mengendalikan seluruh konfigurasi tingkat Kabupaten: profil faskes, pimpinan, akun Admin Kecamatan & Admin Desa, wilayah, pencadangan & pemulihan sistem'}
           </p>
         </div>
 
@@ -326,7 +329,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         {(isKecamatanAdmin
           ? [
-              { id: 'users', label: `Kelola Akun User Desa (${users.filter((u) => u.role === 'bidan_desa').length})`, icon: Users },
+              { id: 'users', label: `Kelola Akun Admin Desa (${users.filter((u) => u.role === 'admin_desa' || u.role === 'bidan_desa').length})`, icon: Users },
               { id: 'villages', label: `Status Desa Binaan (${villages.length})`, icon: MapPin },
               { id: 'logs', label: 'Riwayat Entri Pelayanan', icon: History },
             ]
@@ -724,18 +727,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     disabled={isKecamatanAdmin}
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-medium"
                   >
-                    <option value="bidan_desa">🌿 User Desa (Petugas Entri Data)</option>
+                    <option value="admin_desa">🌿 Admin Desa (Petugas Entri Data)</option>
                     {!isKecamatanAdmin && (
                       <>
-                        <option value="admin_kecamatan">🏢 Admin Kecamatan (Membawahi User Desa)</option>
-                        <option value="admin_induk">👑 Admin Induk (Mengendalikan Semuanya)</option>
+                        <option value="admin_kecamatan">🏢 Admin Kecamatan (Membawahi Admin Desa)</option>
+                        <option value="admin_induk">👑 Admin Induk Kabupaten (Mengendalikan Semuanya)</option>
                       </>
                     )}
                   </select>
                 </div>
               </div>
 
-              {newRole === 'bidan_desa' && (
+              {newRole === 'admin_kecamatan' && (
+                <div className="w-full sm:w-1/2 lg:w-1/4 text-xs">
+                  <label className="block font-semibold text-slate-700 mb-1">Pilih Wilayah Kecamatan</label>
+                  <select
+                    value={newDistrictAssign}
+                    onChange={(e) => setNewDistrictAssign(e.target.value)}
+                    className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-medium"
+                  >
+                    {districts.map((d) => (
+                      <option key={d.id} value={d.name}>
+                        Kecamatan {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(newRole === 'admin_desa' || newRole === 'bidan_desa') && (
                 <div className="w-full sm:w-1/2 lg:w-1/4 text-xs">
                   <label className="block font-semibold text-slate-700 mb-1">Pilih Wilayah Desa Binaan</label>
                   <select
@@ -815,19 +835,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                         @{u.username}
                       </span>
-                      {u.role === 'admin_induk' && (
+                      {(u.role === 'admin_induk' || u.role === 'admin_kabupaten') && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                          👑 Admin Induk
+                          👑 Admin Induk Kabupaten
                         </span>
                       )}
                       {u.role === 'admin_kecamatan' && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                          🏢 Admin Kecamatan
+                          🏢 Admin Kec. {u.district || facility.district}
                         </span>
                       )}
-                      {u.role === 'bidan_desa' && (
+                      {(u.role === 'admin_desa' || u.role === 'bidan_desa') && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          🌿 User Desa: {u.village || 'Entri Pelayanan'}
+                          🌿 Admin Desa: {u.village || 'Entri Pelayanan'}
                         </span>
                       )}
                       {currentUser?.username === u.username && (
@@ -836,8 +856,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1 flex items-center space-x-2">
+                    <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span>Password: <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700 font-semibold">{u.password}</code></span>
+                      {u.district && u.role === 'admin_kecamatan' && <span>• Wilayah: <strong>Kec. {u.district}</strong></span>}
                       {u.nip && <span>• NIP: {u.nip}</span>}
                     </div>
                   </div>

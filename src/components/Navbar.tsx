@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FacilityProfile, User } from '../types';
+import { District, FacilityProfile, User } from '../types';
+import { StorageService } from '../services/storage';
 import {
   Home,
   Users,
@@ -20,6 +21,8 @@ interface NavbarProps {
   setActiveTab: (tab: 'dashboard' | 'register' | 'rekapitulasi' | 'admin') => void;
   currentUser: User | null;
   facility: FacilityProfile;
+  districts?: District[];
+  onSelectDistrict?: (districtName: string) => void;
   onOpenLogin: () => void;
   onLogout: () => void;
 }
@@ -29,26 +32,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   currentUser,
   facility,
+  districts: propDistricts,
+  onSelectDistrict,
   onOpenLogin,
   onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const districts = propDistricts || StorageService.getDistricts();
 
   const getRoleLabel = (user: User | null) => {
     if (!user) return 'Tamu';
     switch (user.role) {
       case 'admin_induk':
-        return 'Admin Induk (Puskesmas)';
+      case 'admin_kabupaten':
+        return 'Admin Induk Kabupaten';
       case 'admin_kecamatan':
         return 'Admin Kecamatan';
+      case 'admin_desa':
       case 'bidan_desa':
-        return `User Desa: ${user.village || 'Bidan'}`;
+        return `Admin Desa: ${user.village || 'Desa'}`;
     }
   };
 
   const navItems = (() => {
-    if (currentUser?.role === 'bidan_desa') {
-      // User Desa tugasnya khusus untuk menentri saja
+    if (currentUser?.role === 'admin_desa' || currentUser?.role === 'bidan_desa') {
+      // Admin Desa tugasnya khusus untuk menentri saja
       return [
         { id: 'register', label: 'Entri Pasien KB', icon: Users, short: 'Entri KB' },
         { id: 'dashboard', label: 'Beranda Desa', icon: Home, short: 'Beranda' },
@@ -56,21 +64,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
 
     if (currentUser?.role === 'admin_kecamatan') {
-      // Admin Kecamatan yang membawahi user desa
+      // Admin Kecamatan yang membawahi admin desa
       return [
         { id: 'dashboard', label: 'Beranda', icon: Home, short: 'Beranda' },
         { id: 'register', label: 'Data Pasien KB', icon: Users, short: 'Pasien KB' },
         { id: 'rekapitulasi', label: 'Laporan Bulanan', icon: FileSpreadsheet, short: 'Laporan F2' },
-        { id: 'admin', label: 'Kelola User Desa', icon: Settings, short: 'User Desa' },
+        { id: 'admin', label: 'Kelola Admin Desa', icon: Settings, short: 'Admin Desa' },
       ] as const;
     }
 
-    // Default: Admin Induk yang mengendalikan semuanya
+    // Default: Admin Induk Kabupaten yang mengendalikan semuanya
     return [
       { id: 'dashboard', label: 'Beranda', icon: Home, short: 'Beranda' },
       { id: 'register', label: 'Data Pasien KB', icon: Users, short: 'Pasien KB' },
       { id: 'rekapitulasi', label: 'Laporan Bulanan', icon: FileSpreadsheet, short: 'Laporan F2' },
-      { id: 'admin', label: 'Pengaturan Sistem', icon: Settings, short: 'Pengaturan' },
+      { id: 'admin', label: 'Pengaturan Kabupaten', icon: Settings, short: 'Pengaturan' },
     ] as const;
   })();
 
@@ -87,6 +95,39 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-medium text-emerald-100">{facility.name}</span>
             </div>
             <div className="flex items-center space-x-3 text-emerald-200 text-[11px]">
+              {/* Kecamatan Switcher for Admin Induk */}
+              {(currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten') ? (
+                <div className="flex items-center space-x-1.5 bg-emerald-950/90 px-2.5 py-0.5 rounded-lg border border-emerald-400/50 text-white">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                  <span className="font-bold text-[11px] text-emerald-200">Wilayah Kerja:</span>
+                  <select
+                    value={currentUser.district || 'SEMUA'}
+                    onChange={(e) => onSelectDistrict && onSelectDistrict(e.target.value)}
+                    className="bg-transparent text-white font-extrabold text-[11px] focus:outline-none cursor-pointer"
+                    title="Pilih Kecamatan yang Ingin Diawasi / Dikelola"
+                  >
+                    <option value="SEMUA" className="text-slate-900 bg-white">
+                      🌐 Semua Kecamatan ({facility.regency})
+                    </option>
+                    {districts.map((d) => (
+                      <option key={d.id} value={d.name} className="text-slate-900 bg-white">
+                        🏢 Kec. {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : currentUser?.role === 'admin_kecamatan' ? (
+                <div className="flex items-center space-x-1 bg-blue-900/60 px-2 py-0.5 rounded-lg border border-blue-400/30 text-blue-100">
+                  <MapPin className="w-3.5 h-3.5 text-blue-300" />
+                  <span className="font-bold">Kec. {currentUser.district || facility.district}</span>
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center space-x-1">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Kec. {facility.district}, {facility.regency}</span>
+                </div>
+              )}
+
               <div
                 className="flex items-center space-x-1.5 bg-emerald-900/70 px-2.5 py-0.5 rounded-full text-[10px] text-emerald-200 border border-emerald-500/40"
                 title="Basis data Cloud aktif: Input di HP langsung otomatis muncul di PC secara realtime"
@@ -94,12 +135,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="font-semibold flex items-center space-x-1">
                   <Cloud className="w-3 h-3 text-emerald-300" />
-                  <span>Cloud Sync Aktif (HP & PC Terhubung)</span>
+                  <span className="hidden md:inline">Cloud Sync Aktif (HP & PC Terhubung)</span>
+                  <span className="md:hidden">Cloud Sync</span>
                 </span>
-              </div>
-              <div className="hidden sm:flex items-center space-x-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-300" />
-                <span>Kec. {facility.district}, {facility.regency}</span>
               </div>
             </div>
           </div>
@@ -164,7 +202,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <div
                       className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                        currentUser.role === 'admin_induk'
+                        currentUser.role === 'admin_induk' || currentUser.role === 'admin_kabupaten'
                           ? 'bg-purple-100 text-purple-800 border border-purple-200'
                           : currentUser.role === 'admin_kecamatan'
                           ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -179,7 +217,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </div>
                       <div
                         className={`text-[10px] font-semibold ${
-                          currentUser.role === 'admin_induk'
+                          currentUser.role === 'admin_induk' || currentUser.role === 'admin_kabupaten'
                             ? 'text-purple-700'
                             : currentUser.role === 'admin_kecamatan'
                             ? 'text-blue-700'

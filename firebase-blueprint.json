@@ -8,10 +8,11 @@
         "id": { "type": "string" },
         "username": { "type": "string" },
         "password": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin_induk", "admin_kecamatan", "bidan_desa"] },
+        "role": { "type": "string", "enum": ["admin_induk", "admin_kabupaten", "admin_kecamatan", "admin_desa", "bidan_desa"] },
         "name": { "type": "string" },
         "phone": { "type": "string" },
         "nip": { "type": "string" },
+        "district": { "type": "string" },
         "village": { "type": "string" }
       },
       "required": ["id", "username", "role", "name"]

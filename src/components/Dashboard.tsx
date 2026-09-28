@@ -41,9 +41,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateRekap,
   onAddNew,
 }) => {
-  const isBidanDesa = currentUser?.role === 'bidan_desa';
+  const isBidanDesa = currentUser?.role === 'admin_desa' || currentUser?.role === 'bidan_desa';
   const isAdminKecamatan = currentUser?.role === 'admin_kecamatan';
-  const isAdminInduk = currentUser?.role === 'admin_induk' || !currentUser;
+  const isAdminInduk = currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten' || !currentUser;
 
   const [selectedMonth, setSelectedMonth] = useState<number>(0); // 0 = Semua Bulan
   const [selectedYear, setSelectedYear] = useState<number>(2026);
@@ -188,10 +188,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               }`}
             >
               {isAdminInduk
-                ? '👑 Admin Induk'
+                ? `👑 Admin Induk Kabupaten${currentUser?.district ? ` (Kec. ${currentUser.district})` : ' (Semua Kecamatan)'}`
                 : isAdminKecamatan
-                ? '🏢 Admin Kecamatan'
-                : `🌿 User Desa: ${currentUser?.village || ''}`}
+                ? `🏢 Admin Kec. ${currentUser?.district || facility.district}`
+                : `🌿 Admin Desa: ${currentUser?.village || ''}`}
             </span>
             <span className="text-xs text-slate-500 font-medium">
               {facility.name} • Kec. {facility.district}
@@ -202,14 +202,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ? `Rekap Entri Pelayanan KB Desa ${currentUser?.village || ''}`
               : isAdminKecamatan
               ? `Monitoring & Pengawasan Entri KB Kec. ${facility.district}`
-              : 'Rekap Eksekutif Pelayanan KB Puskesmas'}
+              : 'Rekap Eksekutif Pelayanan KB Kabupaten'}
           </h1>
           <p className="text-xs text-slate-500">
             {isBidanDesa
               ? `Pantauan data akseptor KB yang telah Anda entri khusus wilayah Desa ${currentUser?.village || ''}`
               : isAdminKecamatan
-              ? `Pengawasan kepatuhan pelaporan data entri dari seluruh User Desa di wilayah kerja Kecamatan ${facility.district}`
-              : 'Ringkasan capaian seluruh wilayah kerja puskesmas, KBPP (Pasca Persalinan), dan Kunjungan Ulang'}
+              ? `Pengawasan kepatuhan pelaporan data entri dari seluruh Admin Desa di wilayah kerja Kecamatan ${facility.district}`
+              : 'Ringkasan capaian seluruh wilayah kerja kabupaten & puskesmas, KBPP (Pasca Persalinan), dan Kunjungan Ulang'}
           </p>
         </div>
 

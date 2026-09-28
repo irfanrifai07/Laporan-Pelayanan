@@ -261,9 +261,9 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
     }
   };
 
-    const isBidanDesa = currentUser?.role === 'bidan_desa';
+    const isBidanDesa = currentUser?.role === 'admin_desa' || currentUser?.role === 'bidan_desa';
     const isAdminKecamatan = currentUser?.role === 'admin_kecamatan';
-    const isAdminInduk = currentUser?.role === 'admin_induk' || !currentUser;
+    const isAdminInduk = currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten' || !currentUser;
 
     return (
       <div className="space-y-4">
@@ -289,7 +289,7 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
                       ? `Register Pelayanan KB Desa ${currentUser?.village || ''}`
                       : isAdminKecamatan
                       ? `Monitoring & Supervisi Register KB Kec. ${facility.district}`
-                      : 'Register Pelayanan KB Faskes Puskesmas Induk'}
+                      : 'Register Pelayanan KB Faskes Puskesmas Induk Kabupaten'}
                   </span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -300,15 +300,15 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
                         : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     }`}
                   >
-                    {isAdminInduk ? '👑 Admin Induk' : isAdminKecamatan ? '🏢 Admin Kecamatan' : '🌿 User Desa'}
+                    {isAdminInduk ? `👑 Admin Induk Kabupaten${currentUser?.district ? ` (Kec. ${currentUser.district})` : ''}` : isAdminKecamatan ? `🏢 Admin Kec. ${currentUser?.district || facility.district}` : '🌿 Admin Desa'}
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-500">
                   {isBidanDesa
                     ? `Format Resmi BKKBN • Khusus pencatatan pelayanan akseptor wilayah Desa ${currentUser?.village || ''}`
                     : isAdminKecamatan
-                    ? `Format Resmi BKKBN • Mengawasi dan memverifikasi data seluruh desa binaan di Kecamatan ${facility.district}`
-                    : 'Format Resmi BKKBN • Kendali penuh atas seluruh data register pelayanan KB se-faskes'}
+                    ? `Format Resmi BKKBN • Mengawasi dan memverifikasi data seluruh Admin Desa di Kecamatan ${facility.district}`
+                    : 'Format Resmi BKKBN • Kendali penuh atas seluruh data register pelayanan KB tingkat Kabupaten'}
                 </p>
               </div>
             </div>

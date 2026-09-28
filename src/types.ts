@@ -1,4 +1,9 @@
-export type Role = 'admin_induk' | 'admin_kecamatan' | 'bidan_desa';
+export type Role =
+  | 'admin_induk'
+  | 'admin_kabupaten'
+  | 'admin_kecamatan'
+  | 'admin_desa'
+  | 'bidan_desa';
 
 export interface User {
   id: string;
@@ -6,7 +11,8 @@ export interface User {
   password: string;
   role: Role;
   name: string;
-  village?: string; // village assigned for bidan_desa
+  district?: string; // district assigned for admin_kecamatan (or targeted by admin_induk)
+  village?: string; // village assigned for admin_desa
   phone?: string;
   nip?: string;
 }
