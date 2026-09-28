@@ -7,6 +7,7 @@ import { Dashboard } from './components/Dashboard';
 import { RegisterTable } from './components/RegisterTable';
 import { RekapitulasiF2KB } from './components/RekapitulasiF2KB';
 import { AdminPanel } from './components/AdminPanel';
+import { RoleWorkspaceBanner } from './components/RoleWorkspaceBanner';
 import { RegisterFormModal } from './components/RegisterFormModal';
 import { PrintRegisterModal } from './components/PrintRegisterModal';
 import { LoginModal } from './components/LoginModal';
@@ -258,11 +259,23 @@ export default function App() {
 
       {/* Main App Content Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Banner Identitas & Ruang Kerja Peran (Tampilan Berbeda Setiap Akun) */}
+        <RoleWorkspaceBanner
+          currentUser={currentUser}
+          facility={facility}
+          records={records}
+          villages={villages}
+          users={users}
+          onOpenNewRecord={handleOpenNew}
+          onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+
         {activeTab === 'dashboard' && (
           <Dashboard
             records={records}
             villages={villages}
             facility={facility}
+            currentUser={currentUser}
             onNavigateRegister={() => setActiveTab('register')}
             onNavigateRekap={() => setActiveTab('rekapitulasi')}
             onAddNew={handleOpenNew}

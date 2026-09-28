@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ContraceptiveMethod, FacilityProfile, PatientRecord, Village } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ContraceptiveMethod, FacilityProfile, PatientRecord, User, Village } from '../types';
 import { METHOD_SHORT_LABELS, METHOD_LABELS } from '../data/initialData';
 import {
   Calendar,
@@ -15,12 +15,18 @@ import {
   FileSpreadsheet,
   MapPin,
   TrendingUp,
+  UserCheck,
+  CheckCircle,
+  Clock,
+  Shield,
+  Eye,
 } from 'lucide-react';
 
 interface DashboardProps {
   records: PatientRecord[];
   villages: Village[];
   facility: FacilityProfile;
+  currentUser?: User | null;
   onNavigateRegister: () => void;
   onNavigateRekap: () => void;
   onAddNew: () => void;
@@ -30,13 +36,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
   records,
   villages,
   facility,
+  currentUser,
   onNavigateRegister,
   onNavigateRekap,
   onAddNew,
 }) => {
+  const isBidanDesa = currentUser?.role === 'bidan_desa';
+  const isAdminKecamatan = currentUser?.role === 'admin_kecamatan';
+  const isAdminInduk = currentUser?.role === 'admin_induk' || !currentUser;
+
   const [selectedMonth, setSelectedMonth] = useState<number>(0); // 0 = Semua Bulan
   const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedVillage, setSelectedVillage] = useState<string>('SEMUA');
+  const [selectedVillage, setSelectedVillage] = useState<string>(
+    isBidanDesa && currentUser?.village ? currentUser.village : 'SEMUA'
+  );
+
+  useEffect(() => {
+    if (isBidanDesa && currentUser?.village) {
+      setSelectedVillage(currentUser.village);
+    }
+  }, [isBidanDesa, currentUser?.village]);
 
   const monthNames = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -159,18 +178,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-              Rekapitulasi
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                isAdminInduk
+                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                  : isAdminKecamatan
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              {isAdminInduk
+                ? '👑 Admin Induk'
+                : isAdminKecamatan
+                ? '🏢 Admin Kecamatan'
+                : `🌿 User Desa: ${currentUser?.village || ''}`}
             </span>
             <span className="text-xs text-slate-500 font-medium">
               {facility.name} • Kec. {facility.district}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-            Rekap Data Pelayanan KB
+            {isBidanDesa
+              ? `Rekap Entri Pelayanan KB Desa ${currentUser?.village || ''}`
+              : isAdminKecamatan
+              ? `Monitoring & Pengawasan Entri KB Kec. ${facility.district}`
+              : 'Rekap Eksekutif Pelayanan KB Puskesmas'}
           </h1>
           <p className="text-xs text-slate-500">
-            Ringkasan capaian akseptor KB, KBPP (Pasca Persalinan), dan Kunjungan Ulang
+            {isBidanDesa
+              ? `Pantauan data akseptor KB yang telah Anda entri khusus wilayah Desa ${currentUser?.village || ''}`
+              : isAdminKecamatan
+              ? `Pengawasan kepatuhan pelaporan data entri dari seluruh User Desa di wilayah kerja Kecamatan ${facility.district}`
+              : 'Ringkasan capaian seluruh wilayah kerja puskesmas, KBPP (Pasca Persalinan), dan Kunjungan Ulang'}
           </p>
         </div>
 
@@ -208,12 +247,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <select
               value={selectedVillage}
               onChange={(e) => setSelectedVillage(e.target.value)}
-              className="text-xs font-medium bg-transparent border-none focus:outline-none text-slate-800"
+              disabled={isBidanDesa}
+              className="text-xs font-medium bg-transparent border-none focus:outline-none text-slate-800 disabled:opacity-80"
             >
-              <option value="SEMUA">Semua Desa (Puskesmas)</option>
+              {!isBidanDesa && (
+                <option value="SEMUA">
+                  {isAdminKecamatan ? 'Semua Desa (Se-Kecamatan)' : 'Semua Desa (Puskesmas)'}
+                </option>
+              )}
               {villages.map((v) => (
                 <option key={v.id} value={v.name}>
-                  Desa {v.name}
+                  Desa {v.name} {isBidanDesa ? '(Wilayah Entri Anda)' : ''}
                 </option>
               ))}
             </select>
@@ -222,21 +266,121 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Action buttons */}
           <button
             onClick={onAddNew}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition"
+            className={`inline-flex items-center space-x-1.5 px-3.5 py-2 text-white font-bold rounded-xl text-xs shadow-xs transition cursor-pointer ${
+              isBidanDesa
+                ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-400/50'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+            }`}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Entri Pasien</span>
+            <span>+ Entri Pasien</span>
           </button>
 
           <button
             onClick={onNavigateRegister}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
           >
             <ClipboardList className="w-3.5 h-3.5 text-slate-600" />
-            <span>Tabel Register</span>
+            <span>{isBidanDesa ? 'Data Desa Saya' : 'Tabel Register'}</span>
           </button>
         </div>
       </div>
+
+      {/* SPECIAL WIDGET FOR ADMIN KECAMATAN: MONITORING DESA BINAAN */}
+      {isAdminKecamatan && (
+        <div className="bg-white rounded-2xl border border-blue-200 shadow-xs p-4 sm:p-5 space-y-3 bg-gradient-to-br from-blue-50/40 via-white to-slate-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Monitoring Kepatuhan Entri {villages.length} Desa Binaan
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Pantau desa mana saja yang sudah aktif mengentri dan desa yang belum melaporkan
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-blue-800 bg-blue-100/80 px-2.5 py-1 rounded-full border border-blue-200">
+              Kecamatan {facility.district}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            {villages.map((v) => {
+              const villageRecords = records.filter(
+                (r) => r.village.toLowerCase() === v.name.toLowerCase()
+              );
+              const hasEntries = villageRecords.length > 0;
+              return (
+                <div
+                  key={v.id}
+                  onClick={() => setSelectedVillage(v.name)}
+                  className={`p-3 rounded-xl border transition cursor-pointer text-left ${
+                    selectedVillage === v.name
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                      : 'bg-white hover:bg-blue-50/50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span>Desa {v.name}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        hasEntries ? 'bg-emerald-400' : 'bg-amber-400'
+                      }`}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-lg font-black">{villageRecords.length}</span>
+                    <span
+                      className={`text-[10px] ${
+                        selectedVillage === v.name ? 'text-blue-100' : 'text-slate-400'
+                      }`}
+                    >
+                      akseptor
+                    </span>
+                  </div>
+                  <div
+                    className={`text-[10px] truncate mt-1 ${
+                      selectedVillage === v.name ? 'text-blue-200' : 'text-slate-500'
+                    }`}
+                  >
+                    Bidan: {v.assignedBidanName ? v.assignedBidanName.replace(/Bd\.\s*/, '') : 'Belum Ada'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* SPECIAL WIDGET FOR USER DESA: RECENT ENTRIES & QUICK ENTRY NOTICE */}
+      {isBidanDesa && (
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">
+                Fokus Tugas Entri
+              </span>
+              <span className="text-xs font-bold text-emerald-950">
+                Wilayah Desa {currentUser?.village || ''}
+              </span>
+            </div>
+            <p className="text-xs text-emerald-800 leading-relaxed">
+              Tugas Anda adalah menentri seluruh akseptor KB di desa Anda. Data yang baru disimpan langsung otomatis tersinkronisasi ke server Cloud secara realtime tanpa perlu kirim berkas manual.
+            </p>
+          </div>
+          <button
+            onClick={onAddNew}
+            className="w-full md:w-auto px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Mulai Entri Pasien Baru</span>
+          </button>
+        </div>
+      )}
 
       {/* KARTU REKAPITULASI STATUS (KBPP & ULANG DIPISAH SECARA TEGAS) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

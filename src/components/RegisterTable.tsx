@@ -261,90 +261,129 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Top Action Toolbar */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center space-x-2">
-            <div className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-700" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                Register Pelayanan KB Faskes Puskesmas
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Format Resmi BKKBN (Sesuai Dokumen Laporan Pelayanan KB)
-              </p>
+    const isBidanDesa = currentUser?.role === 'bidan_desa';
+    const isAdminKecamatan = currentUser?.role === 'admin_kecamatan';
+    const isAdminInduk = currentUser?.role === 'admin_induk' || !currentUser;
+
+    return (
+      <div className="space-y-4">
+        {/* Top Action Toolbar */}
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <div
+                className={`p-1.5 rounded-lg ${
+                  isAdminInduk
+                    ? 'bg-purple-100 text-purple-800'
+                    : isAdminKecamatan
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                  <span>
+                    {isBidanDesa
+                      ? `Register Pelayanan KB Desa ${currentUser?.village || ''}`
+                      : isAdminKecamatan
+                      ? `Monitoring & Supervisi Register KB Kec. ${facility.district}`
+                      : 'Register Pelayanan KB Faskes Puskesmas Induk'}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      isAdminInduk
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        : isAdminKecamatan
+                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    {isAdminInduk ? '👑 Admin Induk' : isAdminKecamatan ? '🏢 Admin Kecamatan' : '🌿 User Desa'}
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  {isBidanDesa
+                    ? `Format Resmi BKKBN • Khusus pencatatan pelayanan akseptor wilayah Desa ${currentUser?.village || ''}`
+                    : isAdminKecamatan
+                    ? `Format Resmi BKKBN • Mengawasi dan memverifikasi data seluruh desa binaan di Kecamatan ${facility.district}`
+                    : 'Format Resmi BKKBN • Kendali penuh atas seluruh data register pelayanan KB se-faskes'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          {/* Print/PDF */}
-          <button
-            onClick={onOpenPrint}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition shadow-2xs cursor-pointer active:scale-95"
-            title="Cetak atau Simpan PDF format landscape resmi BKKBN"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            <span>Cetak / PDF</span>
-          </button>
-
-          {/* Export CSV */}
-          <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition shadow-2xs cursor-pointer active:scale-95"
-            title="Ekspor Seluruh Kolom ke format Excel / CSV"
-          >
-            <Download className="w-4 h-4 text-emerald-600" />
-            <span>Ekspor CSV</span>
-          </button>
-
-          {/* Add New Record */}
-          <button
-            onClick={onAddNew}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Entri Baru</span>
-          </button>
-
-          {/* Load Sample August 2026 data button */}
-          {records.length === 0 && onLoadSampleAgustus && (
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Print/PDF */}
             <button
-              onClick={onLoadSampleAgustus}
-              className="inline-flex items-center space-x-1 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition cursor-pointer"
-              title="Muat contoh data akseptor Laporan KB Agustus 2026 untuk pratinjau tabel"
+              onClick={onOpenPrint}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition shadow-2xs cursor-pointer active:scale-95"
+              title="Cetak atau Simpan PDF format landscape resmi BKKBN"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Muat Contoh Data</span>
+              <Printer className="w-4 h-4 text-slate-600" />
+              <span>Cetak / PDF</span>
             </button>
-          )}
 
-          {/* Clear records button if records exist */}
-          {records.length > 0 && onClearRecords && (
+            {/* Export CSV (Admin Induk & Kecamatan) */}
+            {!isBidanDesa && (
+              <button
+                onClick={handleExportCSV}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition shadow-2xs cursor-pointer active:scale-95"
+                title="Ekspor Seluruh Kolom ke format Excel / CSV"
+              >
+                <Download className="w-4 h-4 text-emerald-600" />
+                <span>Ekspor CSV</span>
+              </button>
+            )}
+
+            {/* Add New Record */}
             <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    'PERINGATAN: Apakah Anda yakin ingin mengosongkan seluruh data register pelayanan KB? Seluruh data pasien akan dihapus menjadi 0 data.'
-                  )
-                ) {
-                  onClearRecords();
-                }
-              }}
-              className="inline-flex items-center space-x-1 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition cursor-pointer"
-              title="Kosongkan seluruh data register"
+              onClick={onAddNew}
+              className={`inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer ${
+                isBidanDesa
+                  ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-400/50'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
             >
-              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Kosongkan</span>
+              <Plus className="w-4 h-4" />
+              <span>{isBidanDesa ? `+ Entri Pasien Desa ${currentUser?.village || ''}` : '+ Entri Baru'}</span>
             </button>
-          )}
+
+            {/* Load Sample August 2026 data button (Hanya Admin Induk) */}
+            {isAdminInduk && records.length === 0 && onLoadSampleAgustus && (
+              <button
+                onClick={onLoadSampleAgustus}
+                className="inline-flex items-center space-x-1 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition cursor-pointer"
+                title="Muat contoh data akseptor Laporan KB Agustus 2026 untuk pratinjau tabel"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Muat Contoh Data</span>
+              </button>
+            )}
+
+            {/* Clear records button (Hanya Admin Induk) */}
+            {isAdminInduk && records.length > 0 && onClearRecords && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      'PERINGATAN: Apakah Anda yakin ingin mengosongkan seluruh data register pelayanan KB? Seluruh data pasien akan dihapus menjadi 0 data.'
+                    )
+                  ) {
+                    onClearRecords();
+                  }
+                }}
+                className="inline-flex items-center space-x-1 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition cursor-pointer"
+                title="Kosongkan seluruh data register"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>Kosongkan</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
