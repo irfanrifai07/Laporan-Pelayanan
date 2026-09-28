@@ -290,6 +290,7 @@ export default function App() {
 
       <LoginModal
         isOpen={isLoginModalOpen}
+        users={users}
         onClose={() => {
           if (currentUser) setIsLoginModalOpen(false);
         }}

@@ -148,36 +148,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Add User
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername.trim() || !newPassword.trim() || !newName.trim()) {
-      alert('Harap isi username, password, dan nama pengguna.');
+    const cleanUser = newUsername.trim().toLowerCase().replace(/\s+/g, '_');
+    const cleanPass = newPassword.trim();
+    const cleanName = newName.trim();
+
+    if (!cleanUser || !cleanPass || !cleanName) {
+      alert('Harap isi username, kata sandi, dan nama lengkap pengguna.');
       return;
     }
 
-    const exists = users.some((u) => u.username.toLowerCase() === newUsername.trim().toLowerCase());
+    const exists = users.some((u) => u.username.toLowerCase() === cleanUser);
     if (exists) {
-      alert('Username sudah digunakan.');
+      alert(`Username "${cleanUser}" sudah digunakan. Silakan gunakan username lain.`);
       return;
     }
 
     const newU: User = {
       id: 'usr-' + Date.now(),
-      username: newUsername.trim().toLowerCase(),
-      password: newPassword,
+      username: cleanUser,
+      password: cleanPass,
       role: newRole,
-      name: newName.trim(),
+      name: cleanName,
       village: newRole === 'bidan_desa' ? newVillageAssign : undefined,
     };
 
     const updated = [...users, newU];
     onUpdateUsers(updated);
     StorageService.saveUsers(updated);
-    StorageService.logActivity(currentUser?.username || 'admin', 'TAMBAH_USER', `Menambah pengguna baru: ${newU.name} (${newU.username})`);
+    StorageService.logActivity(
+      currentUser?.username || 'admin',
+      'TAMBAH_USER',
+      `Menambah pengguna baru: ${newU.name} (@${newU.username}) dengan peran ${newU.role}`
+    );
 
     setNewUsername('');
     setNewPassword('123');
     setNewName('');
-    setStatusMessage({ text: `Pengguna ${newU.name} berhasil ditambahkan!`, type: 'success' });
-    setTimeout(() => setStatusMessage(null), 3000);
+    setStatusMessage({
+      text: `Pengguna ${newU.name} (@${newU.username}) berhasil ditambahkan! Kata sandi: "${cleanPass}"`,
+      type: 'success',
+    });
+    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   // Delete User
@@ -634,59 +645,63 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <Plus className="w-4 h-4 text-emerald-600" />
               <span>Tambah Akun Pengguna Baru</span>
             </h3>
-            <form onSubmit={handleAddUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Username Login</label>
-                <input
-                  type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="Contoh: bedoro"
-                  required
-                  className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Kata Sandi</label>
-                <input
-                  type="text"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                  className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nama Bidan / Petugas"
-                  required
-                  className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Peran (Role)</label>
-                <select
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as any)}
-                  className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
-                >
-                  <option value="bidan_desa">Bidan Desa</option>
-                  <option value="admin_induk">Admin Induk</option>
-                  <option value="admin_kecamatan">Admin Kecamatan</option>
-                </select>
-              </div>
-
-              {newRole === 'bidan_desa' ? (
+            <form onSubmit={handleAddUser} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Wilayah Desa</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Username Login</label>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                    placeholder="Contoh: adminkecamatan / bidan_duyungan"
+                    required
+                    className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Huruf kecil, tanpa spasi</p>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Kata Sandi (Password)</label>
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Masukkan kata sandi"
+                    required
+                    className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Bawaan: 123</p>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Nama Lengkap Petugas</label>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Nama Lengkap / Jabatan"
+                    required
+                    className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Peran (Role)</label>
+                  <select
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value as any)}
+                    className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white"
+                  >
+                    <option value="bidan_desa">Bidan Desa</option>
+                    <option value="admin_induk">Admin Induk (Puskesmas)</option>
+                    <option value="admin_kecamatan">Admin Kecamatan (Koordinator KB)</option>
+                  </select>
+                </div>
+              </div>
+
+              {newRole === 'bidan_desa' && (
+                <div className="w-full sm:w-1/2 lg:w-1/4 text-xs">
+                  <label className="block font-semibold text-slate-700 mb-1">Pilih Wilayah Desa Binaan</label>
                   <select
                     value={newVillageAssign}
                     onChange={(e) => setNewVillageAssign(e.target.value)}
@@ -699,29 +714,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     ))}
                   </select>
                 </div>
-              ) : (
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition flex items-center justify-center space-x-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Simpan Akun</span>
-                  </button>
-                </div>
               )}
 
-              {newRole === 'bidan_desa' && (
-                <div className="sm:col-span-2 lg:col-span-5 flex justify-end">
-                  <button
-                    type="submit"
-                    className="py-2 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition flex items-center space-x-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambahkan Akun Bidan</span>
-                  </button>
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
+                <div className="text-[11px] text-slate-500">
+                  {newUsername.trim() ? (
+                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                      Data Login: Username <strong className="font-mono">@{newUsername.trim().toLowerCase().replace(/\s+/g, '_')}</strong> | Password: <strong className="font-mono">{newPassword.trim() || '123'}</strong>
+                    </span>
+                  ) : (
+                    <span>Isi form di atas untuk mendaftarkan akun baru</span>
+                  )}
                 </div>
-              )}
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto py-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Simpan & Daftarkan Akun</span>
+                </button>
+              </div>
             </form>
           </div>
 

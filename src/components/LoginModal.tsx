@@ -1,41 +1,69 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { StorageService } from '../services/storage';
-import { AlertCircle, Building2, Check, Lock, User as UserIcon } from 'lucide-react';
+import { AlertCircle, Building2, Check, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose?: () => void;
   onLoginSuccess: (user: User) => void;
+  users?: User[];
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+  users: propUsers,
+}) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
-  const users = StorageService.getUsers();
   const facility = StorageService.getFacilityProfile();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
-    const trimmedUser = username.trim().toLowerCase();
-    const found = users.find(
-      (u) => u.username.toLowerCase() === trimmedUser && u.password === password
-    );
+    // Selalu ambil daftar user paling segar dari storage & prop
+    const storageUsers = StorageService.getUsers();
+    const allUsers = propUsers && propUsers.length > 0 ? propUsers : storageUsers;
 
-    if (found) {
-      StorageService.setCurrentUser(found);
-      StorageService.logActivity(found.username, 'LOGIN', `Pengguna ${found.name} berhasil masuk`);
-      onLoginSuccess(found);
-      if (onClose) onClose();
-    } else {
-      setErrorMessage('Username atau kata sandi tidak cocok. Silakan periksa kembali.');
+    const inputUser = username.trim().toLowerCase();
+    const cleanInputUser = inputUser.replace(/[\s_-]/g, '');
+    const inputPass = password.trim();
+
+    // Cocokkan username secara fleksibel (mengabaikan spasi, underscore, dan huruf besar/kecil)
+    const userMatch = allUsers.find((u) => {
+      const uName = (u.username || '').trim().toLowerCase();
+      const cleanUName = uName.replace(/[\s_-]/g, '');
+      return uName === inputUser || cleanUName === cleanInputUser;
+    });
+
+    if (!userMatch) {
+      setErrorMessage(
+        `Username "${username.trim()}" tidak ditemukan. Pastikan username sesuai dengan yang didaftarkan di Pengaturan Admin.`
+      );
+      return;
     }
+
+    // Periksa password
+    const savedPass = (userMatch.password || '').trim();
+    if (savedPass !== inputPass) {
+      setErrorMessage(
+        `Kata sandi untuk username "${userMatch.username}" salah. Silakan periksa kembali ketikan password Anda.`
+      );
+      return;
+    }
+
+    StorageService.setCurrentUser(userMatch);
+    StorageService.logActivity(userMatch.username, 'LOGIN', `Pengguna ${userMatch.name} (${userMatch.username}) berhasil masuk`);
+    onLoginSuccess(userMatch);
+    if (onClose) onClose();
   };
 
   return (
@@ -53,9 +81,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-4">
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500" />
-              <span>{errorMessage}</span>
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500 mt-0.5" />
+              <span className="leading-relaxed">{errorMessage}</span>
             </div>
           )}
 
@@ -63,15 +91,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
           <form onSubmit={handleLogin} className="space-y-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-700 mb-1.5">
-                Username
+                Username Akun
               </label>
               <div className="relative">
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Masukkan username akun"
+                  placeholder="Contoh: admin / adminkec / bidan"
                   required
+                  autoFocus
                   className="w-full py-2.5 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono transition"
                 />
                 <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -84,14 +113,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi"
                   required
-                  className="w-full py-2.5 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full py-2.5 pl-9 pr-10 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
