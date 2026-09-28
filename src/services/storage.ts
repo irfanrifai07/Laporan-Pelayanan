@@ -18,6 +18,7 @@ import {
   initialUsers,
   initialVillages,
 } from '../data/initialData';
+import { FirestoreService } from './firebase';
 
 const STORAGE_KEYS = {
   USERS: 'kb_faskes_users_v1',
@@ -92,11 +93,30 @@ export const StorageService = {
       u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
     );
   },
+  saveUsersLocallyOnly(users: User[]): void {
+    const unified = users.map((u) =>
+      u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
+    );
+    safeSet(STORAGE_KEYS.USERS, unified);
+  },
   saveUsers(users: User[]): void {
     const unified = users.map((u) =>
       u.role === ('admin_kecamatan' as any) ? { ...u, role: 'admin_induk' as Role } : u
     );
     safeSet(STORAGE_KEYS.USERS, unified);
+    FirestoreService.syncAllUsers(unified);
+  },
+  saveSingleUser(user: User): void {
+    const users = this.getUsers();
+    const updated = [...users.filter((u) => u.id !== user.id), user];
+    this.saveUsersLocallyOnly(updated);
+    FirestoreService.saveUser(user);
+  },
+  deleteUser(userId: string): void {
+    const users = this.getUsers();
+    const filtered = users.filter((u) => u.id !== userId);
+    this.saveUsersLocallyOnly(filtered);
+    FirestoreService.deleteUser(userId);
   },
   getCurrentUser(): User | null {
     const u = safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
@@ -118,16 +138,24 @@ export const StorageService = {
   getFacilityProfile(): FacilityProfile {
     return safeGet<FacilityProfile>(STORAGE_KEYS.PROFILE, initialFacilityProfile);
   },
+  saveFacilityProfileLocallyOnly(profile: FacilityProfile): void {
+    safeSet(STORAGE_KEYS.PROFILE, profile);
+  },
   saveFacilityProfile(profile: FacilityProfile): void {
     safeSet(STORAGE_KEYS.PROFILE, profile);
+    FirestoreService.saveFacility(profile);
   },
 
   // VILLAGES
   getVillages(): Village[] {
     return safeGet<Village[]>(STORAGE_KEYS.VILLAGES, initialVillages);
   },
+  saveVillagesLocallyOnly(villages: Village[]): void {
+    safeSet(STORAGE_KEYS.VILLAGES, villages);
+  },
   saveVillages(villages: Village[]): void {
     safeSet(STORAGE_KEYS.VILLAGES, villages);
+    FirestoreService.syncAllVillages(villages);
   },
 
   // DISTRICTS
@@ -142,8 +170,12 @@ export const StorageService = {
   getRecords(): PatientRecord[] {
     return safeGet<PatientRecord[]>(STORAGE_KEYS.RECORDS, initialSampleRecords);
   },
+  saveRecordsLocallyOnly(records: PatientRecord[]): void {
+    safeSet(STORAGE_KEYS.RECORDS, records);
+  },
   saveRecords(records: PatientRecord[]): void {
     safeSet(STORAGE_KEYS.RECORDS, records);
+    FirestoreService.syncAllRecords(records);
   },
 
   addRecord(record: Omit<PatientRecord, 'id' | 'createdAt' | 'updatedAt'>): PatientRecord {
@@ -155,7 +187,8 @@ export const StorageService = {
       updatedAt: new Date().toISOString(),
     };
     records.unshift(newRecord);
-    this.saveRecords(records);
+    this.saveRecordsLocallyOnly(records);
+    FirestoreService.saveRecord(newRecord);
     this.logActivity(record.createdByUsername, 'TAMBAH_REGISTER', `Menambah data akseptor ${newRecord.wifeName} (${newRecord.registerNumber})`);
     return newRecord;
   },
@@ -168,7 +201,8 @@ export const StorageService = {
         ...updated,
         updatedAt: new Date().toISOString(),
       };
-      this.saveRecords(records);
+      this.saveRecordsLocallyOnly(records);
+      FirestoreService.saveRecord(records[idx]);
       this.logActivity(currentUsername, 'EDIT_REGISTER', `Mengubah data akseptor ${updated.wifeName} (${updated.registerNumber})`);
     }
   },
@@ -177,7 +211,8 @@ export const StorageService = {
     const records = this.getRecords();
     const target = records.find((r) => r.id === id);
     const filtered = records.filter((r) => r.id !== id);
-    this.saveRecords(filtered);
+    this.saveRecordsLocallyOnly(filtered);
+    FirestoreService.deleteRecord(id);
     if (target) {
       this.logActivity(currentUsername, 'HAPUS_REGISTER', `Menghapus data akseptor ${target.wifeName} (${target.registerNumber})`);
     }

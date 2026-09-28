@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FacilityProfile, PatientRecord, User, Village } from './types';
 import { StorageService } from './services/storage';
+import { FirestoreService, testFirebaseConnection } from './services/firebase';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { RegisterTable } from './components/RegisterTable';
@@ -125,6 +126,56 @@ export default function App() {
     setUsers(newUsers);
     StorageService.saveUsers(newUsers);
   };
+
+  // Sinkronisasi Realtime Cloud Firebase (Otomatis tersambung HP & PC)
+  useEffect(() => {
+    // 1. Tes koneksi awal
+    testFirebaseConnection();
+
+    // 2. Inisialisasi basis data awan jika belum terisi
+    FirestoreService.initializeCloudDatabase({
+      users: StorageService.getUsers(),
+      records: StorageService.getRecords(),
+      villages: StorageService.getVillages(),
+      facility: StorageService.getFacilityProfile(),
+    });
+
+    // 3. Pasang pendengar realtime perubahan data dari perangkat lain (HP / PC)
+    const unsubUsers = FirestoreService.subscribeUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        StorageService.saveUsersLocallyOnly(cloudUsers);
+        setUsers(cloudUsers);
+      }
+    });
+
+    const unsubRecords = FirestoreService.subscribeRecords((cloudRecords) => {
+      if (cloudRecords) {
+        StorageService.saveRecordsLocallyOnly(cloudRecords);
+        setRecords(cloudRecords);
+      }
+    });
+
+    const unsubVillages = FirestoreService.subscribeVillages((cloudVillages) => {
+      if (cloudVillages && cloudVillages.length > 0) {
+        StorageService.saveVillagesLocallyOnly(cloudVillages);
+        setVillages(cloudVillages);
+      }
+    });
+
+    const unsubFacility = FirestoreService.subscribeFacility((cloudFac) => {
+      if (cloudFac) {
+        StorageService.saveFacilityProfileLocallyOnly(cloudFac);
+        setFacility(cloudFac);
+      }
+    });
+
+    return () => {
+      unsubUsers();
+      unsubRecords();
+      unsubVillages();
+      unsubFacility();
+    };
+  }, []);
 
   // Selalu segarkan data terbaru dari storage saat berpindah tab
   useEffect(() => {

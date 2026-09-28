@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // Users collection: for multi-device sync
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Patient KB Records collection
+    match /records/{recordId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Villages collection
+    match /villages/{villageId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Healthcare facility profile
+    match /facility/{facilityId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Audit logs
+    match /activity_logs/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

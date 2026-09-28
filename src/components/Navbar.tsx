@@ -12,6 +12,7 @@ import {
   X,
   MapPin,
   Sparkles,
+  Cloud,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -64,9 +65,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-medium text-emerald-100">{facility.name}</span>
             </div>
             <div className="flex items-center space-x-3 text-emerald-200 text-[11px]">
-              <div className="flex items-center space-x-1.5 bg-emerald-900/60 px-2.5 py-0.5 rounded-full text-[10px] text-emerald-200 border border-emerald-500/40">
+              <div
+                className="flex items-center space-x-1.5 bg-emerald-900/70 px-2.5 py-0.5 rounded-full text-[10px] text-emerald-200 border border-emerald-500/40"
+                title="Basis data Cloud aktif: Input di HP langsung otomatis muncul di PC secara realtime"
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="font-semibold">Tersimpan Otomatis (Realtime)</span>
+                <span className="font-semibold flex items-center space-x-1">
+                  <Cloud className="w-3 h-3 text-emerald-300" />
+                  <span>Cloud Sync Aktif (HP & PC Terhubung)</span>
+                </span>
               </div>
               <div className="hidden sm:flex items-center space-x-1">
                 <MapPin className="w-3.5 h-3.5 text-emerald-300" />

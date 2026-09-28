@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User credentials and profile data for authentication and role access",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin_induk", "bidan_desa"] },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "nip": { "type": "string" },
+        "village": { "type": "string" }
+      },
+      "required": ["id", "username", "role", "name"]
+    },
+    "PatientRecord": {
+      "title": "PatientRecord",
+      "description": "Register Pelayanan KB (F/II/KB) patient medical service record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "registerNumber": { "type": "string" },
+        "registrationDate": { "type": "string" },
+        "patient": { "type": "object" },
+        "address": { "type": "object" },
+        "source": { "type": "string" },
+        "participantStatus": { "type": "string" },
+        "service": { "type": "object" },
+        "complication": { "type": "object" },
+        "failure": { "type": "object" },
+        "referral": { "type": "object" },
+        "notes": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "registerNumber", "registrationDate", "patient", "address"]
+    },
+    "Village": {
+      "title": "Village",
+      "description": "Registered administrative village / desa in subdistrict",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "subdistrict": { "type": "string" },
+        "district": { "type": "string" },
+        "province": { "type": "string" }
+      },
+      "required": ["id", "code", "name"]
+    },
+    "FacilityProfile": {
+      "title": "FacilityProfile",
+      "description": "Puskesmas / KB health facility profile metadata",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "subdistrict": { "type": "string" },
+        "district": { "type": "string" },
+        "province": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "headOfFacility": { "type": "string" },
+        "headNip": { "type": "string" },
+        "coordinatorKB": { "type": "string" },
+        "coordinatorNip": { "type": "string" }
+      },
+      "required": ["code", "name"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "System activity and audit trail log entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "action": { "type": "string" },
+        "user": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "action", "user"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered user accounts across all devices"
+    },
+    "/records/{recordId}": {
+      "schema": "PatientRecord",
+      "description": "Patient KB service records"
+    },
+    "/villages/{villageId}": {
+      "schema": "Village",
+      "description": "Administrative villages"
+    },
+    "/facility/{facilityId}": {
+      "schema": "FacilityProfile",
+      "description": "Healthcare facility configuration profile"
+    },
+    "/activity_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "System audit trail records"
+    }
+  }
+}
