@@ -252,11 +252,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const oldName = editingDistrict.name;
     const newName = editDistrictName.trim();
 
+    const updatedDistrict: District = { ...editingDistrict, name: newName };
     const updatedDistricts = districts.map((d) =>
-      d.id === editingDistrict.id ? { ...d, name: newName } : d
+      d.id === editingDistrict.id ? updatedDistrict : d
     );
     onUpdateDistricts(updatedDistricts);
-    StorageService.saveDistricts(updatedDistricts);
+    StorageService.saveSingleDistrict(updatedDistrict);
 
     // If name changed, update villages and users mapped to this district
     if (oldName.toLowerCase() !== newName.toLowerCase()) {
@@ -284,7 +285,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     setEditingDistrict(null);
-    setStatusMessage({ text: `Kecamatan berhasil diperbarui menjadi ${newName}!`, type: 'success' });
+    setStatusMessage({ text: `✓ Kecamatan berhasil diperbarui menjadi ${newName} dan langsung tersimpan!`, type: 'success' });
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -334,7 +335,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (districtFilter === d.name) {
       setDistrictFilter('SEMUA');
     }
-    setStatusMessage({ text: `Kecamatan ${d.name} berhasil dihapus.`, type: 'success' });
+    setStatusMessage({ text: `✓ Kecamatan ${d.name} berhasil dihapus dan langsung tersimpan.`, type: 'success' });
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -497,7 +498,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     const updated = villages.map((v) => (v.id === editingVillage.id ? updatedV : v));
     onUpdateVillages(updated);
-    StorageService.saveVillages(updated);
+    StorageService.saveSingleVillage(updatedV);
     StorageService.logActivity(
       currentUser?.username || 'admin',
       'UPDATE_DESA',
@@ -506,7 +507,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     setEditingVillage(null);
     setStatusMessage({
-      text: `Desa ${updatedV.name} berhasil diperbarui (Kecamatan: ${updatedV.district})`,
+      text: `✓ Desa ${updatedV.name} berhasil diperbarui dan langsung tersimpan!`,
       type: 'success',
     });
     setTimeout(() => setStatusMessage(null), 3000);
@@ -516,9 +517,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const targetV = villages.find((v) => v.id === villageId);
     if (!targetV || targetV.district === targetDistrict) return;
 
-    const updated = villages.map((v) => (v.id === villageId ? { ...v, district: targetDistrict } : v));
+    const movedV: Village = { ...targetV, district: targetDistrict };
+    const updated = villages.map((v) => (v.id === villageId ? movedV : v));
     onUpdateVillages(updated);
-    StorageService.saveVillages(updated);
+    StorageService.saveSingleVillage(movedV);
     StorageService.logActivity(
       currentUser?.username || 'admin',
       'PINDAH_KECAMATAN_DESA',
@@ -526,7 +528,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     setStatusMessage({
-      text: `Desa ${targetV.name} berhasil dipindahkan ke Kecamatan ${targetDistrict}!`,
+      text: `✓ Desa ${targetV.name} berhasil dipindahkan ke Kecamatan ${targetDistrict} dan langsung tersimpan!`,
       type: 'success',
     });
     setTimeout(() => setStatusMessage(null), 3000);
@@ -538,7 +540,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onUpdateVillages(updated);
       StorageService.deleteVillage(id);
       StorageService.logActivity(currentUser?.username || 'admin', 'HAPUS_DESA', `Menghapus data Desa ${name}`);
-      setStatusMessage({ text: `Desa ${name} berhasil dihapus.`, type: 'success' });
+      setStatusMessage({ text: `✓ Desa ${name} berhasil dihapus dan langsung tersimpan.`, type: 'success' });
       setTimeout(() => setStatusMessage(null), 3000);
     }
   };
@@ -584,7 +586,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewPassword('123');
     setNewName('');
     setStatusMessage({
-      text: `Pengguna ${newU.name} (@${newU.username}) berhasil ditambahkan! Kata sandi: "${cleanPass}"`,
+      text: `✓ Pengguna ${newU.name} (@${newU.username}) berhasil ditambahkan dan langsung tersimpan! Kata sandi: "${cleanPass}"`,
       type: 'success',
     });
     setTimeout(() => setStatusMessage(null), 4000);
@@ -630,6 +632,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const updated = users.map((u) => (u.id === editingUser.id ? updatedUser : u));
     onUpdateUsers(updated);
     StorageService.saveSingleUser(updatedUser);
+    if (currentUser?.id === updatedUser.id) {
+      StorageService.setCurrentUser(updatedUser);
+    }
     StorageService.logActivity(
       currentUser?.username || 'admin',
       'UPDATE_USER',
@@ -637,7 +642,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     setEditingUser(null);
-    setStatusMessage({ text: `Akun ${updatedUser.name} berhasil diperbarui!`, type: 'success' });
+    setStatusMessage({ text: `✓ Akun ${updatedUser.name} berhasil diperbarui dan langsung tersimpan!`, type: 'success' });
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -650,8 +655,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (window.confirm(`Yakin ingin menghapus pengguna ${name}?`)) {
       const updated = users.filter((u) => u.id !== id);
       onUpdateUsers(updated);
-      StorageService.saveUsers(updated);
+      StorageService.deleteUser(id);
       StorageService.logActivity(currentUser?.username || 'admin', 'HAPUS_USER', `Menghapus pengguna ${name}`);
+      setStatusMessage({ text: `✓ Pengguna ${name} berhasil dihapus dan langsung tersimpan.`, type: 'success' });
+      setTimeout(() => setStatusMessage(null), 3000);
     }
   };
 

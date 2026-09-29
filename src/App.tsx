@@ -82,27 +82,27 @@ export default function App() {
     }, 3500);
   };
 
-  // Add / Edit record
+  // Add / Edit record (langsung tersimpan di storage lokal & cloud Firestore)
   const handleSaveRecord = (
     record: PatientRecord | Omit<PatientRecord, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
     if ('id' in record) {
       StorageService.updateRecord(record as PatientRecord, currentUser?.username || 'admin');
-      showToast(`Data akseptor ${record.wifeName} berhasil diperbarui.`);
+      showToast(`✓ Data akseptor ${record.wifeName} berhasil diperbarui dan langsung tersimpan.`);
     } else {
       StorageService.addRecord(record);
-      showToast(`Data akseptor ${record.wifeName} berhasil ditambahkan ke Register.`);
+      showToast(`✓ Data akseptor ${record.wifeName} berhasil ditambahkan dan langsung tersimpan.`);
     }
     setRecords(StorageService.getRecords());
     setIsFormModalOpen(false);
     setFormEditData(null);
   };
 
-  // Delete record
+  // Delete record (langsung tersimpan & terhapus permanen)
   const handleDeleteRecord = (id: string) => {
     StorageService.deleteRecord(id, currentUser?.username || 'admin');
     setRecords(StorageService.getRecords());
-    showToast('Data register akseptor berhasil dihapus.');
+    showToast('✓ Data register akseptor berhasil dihapus dan langsung tersimpan.');
   };
 
   // Open Edit Form
@@ -140,6 +140,7 @@ export default function App() {
   const handleUpdateFacility = (newFac: FacilityProfile) => {
     setFacility(newFac);
     StorageService.saveFacilityProfile(newFac);
+    showToast('✓ Profil faskes berhasil diperbarui dan langsung tersimpan.');
   };
 
   // Villages update (langsung tersimpan)
@@ -176,7 +177,7 @@ export default function App() {
 
     // 3. Pasang pendengar realtime perubahan data dari perangkat lain (HP / PC)
     const unsubUsers = FirestoreService.subscribeUsers((cloudUsers) => {
-      if (cloudUsers && cloudUsers.length > 0) {
+      if (cloudUsers) {
         StorageService.saveUsersLocallyOnly(cloudUsers);
         setUsers(cloudUsers);
       }
@@ -190,14 +191,14 @@ export default function App() {
     });
 
     const unsubVillages = FirestoreService.subscribeVillages((cloudVillages) => {
-      if (cloudVillages && cloudVillages.length > 0) {
+      if (cloudVillages) {
         StorageService.saveVillagesLocallyOnly(cloudVillages);
         setVillages(cloudVillages);
       }
     });
 
     const unsubDistricts = FirestoreService.subscribeDistricts((cloudDistricts) => {
-      if (cloudDistricts && cloudDistricts.length > 0) {
+      if (cloudDistricts) {
         StorageService.saveDistrictsLocallyOnly(cloudDistricts);
         setDistricts(cloudDistricts);
       }
@@ -228,33 +229,35 @@ export default function App() {
     setFacility(StorageService.getFacilityProfile());
   }, [activeTab]);
 
-  // Sinkronisasi realtime multi-tab & multi-jendela storage listener
+  // Sinkronisasi realtime lokal saat ada update atau hapus data
   useEffect(() => {
+    const handleDataChange = () => {
+      setUsers(StorageService.getUsers());
+      setRecords(StorageService.getRecords());
+      setVillages(StorageService.getVillages());
+      setDistricts(StorageService.getDistricts());
+      setFacility(StorageService.getFacilityProfile());
+      setCurrentUser(StorageService.getCurrentUser());
+    };
+
     const handleStorageChange = (e: StorageEvent) => {
       if (!e.key) return;
-      if (e.key.includes('records')) {
-        setRecords(StorageService.getRecords());
-      } else if (e.key.includes('profile')) {
-        setFacility(StorageService.getFacilityProfile());
-      } else if (e.key.includes('villages')) {
-        setVillages(StorageService.getVillages());
-      } else if (e.key.includes('districts')) {
-        setDistricts(StorageService.getDistricts());
-      } else if (e.key.includes('users')) {
-        setUsers(StorageService.getUsers());
-      } else if (e.key.includes('current_user')) {
-        setCurrentUser(StorageService.getCurrentUser());
-      }
+      handleDataChange();
     };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('kb-faskes-data-changed', handleDataChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('kb-faskes-data-changed', handleDataChange);
+    };
   }, []);
 
   // Clear all patient records
   const handleClearRecords = () => {
     StorageService.clearAllRecords(currentUser?.username || 'admin');
     setRecords([]);
-    showToast('Seluruh data register pelayanan KB berhasil dikosongkan.');
+    showToast('✓ Seluruh data register pelayanan KB berhasil dikosongkan dan langsung tersimpan.');
   };
 
   // Load sample records for August 2026

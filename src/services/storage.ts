@@ -28,7 +28,19 @@ const STORAGE_KEYS = {
   PROFILE: 'kb_faskes_facility_profile_v1',
   RECORDS: 'kb_faskes_patient_records_v2',
   LOGS: 'kb_faskes_activity_logs_v1',
+  INITIALIZED: 'kb_faskes_initialized_flag_v2',
 };
+
+// Dispatch custom event to notify all components in the current tab immediately
+function notifyChange(key: string) {
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('kb-faskes-data-changed', { detail: { key } }));
+    }
+  } catch {
+    // Ignore in SSR
+  }
+}
 
 // Safe JSON parse helper
 function safeGet<T>(key: string, fallback: T): T {
@@ -44,6 +56,7 @@ function safeGet<T>(key: string, fallback: T): T {
 function safeSet<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    notifyChange(key);
   } catch (err) {
     console.error(`Error saving key ${key} to localStorage:`, err);
   }
@@ -51,109 +64,56 @@ function safeSet<T>(key: string, value: T): void {
 
 export const StorageService = {
   init() {
-    // Clear old sample records if existing
+    // Bersihkan data contoh lawas jika ada
     localStorage.removeItem('kb_faskes_patient_records_v1');
 
-    if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-      safeSet(STORAGE_KEYS.USERS, initialUsers);
-    } else {
-      // Upgrade any existing cached users to new role hierarchy
-      const existingUsers = safeGet<User[]>(STORAGE_KEYS.USERS, []);
-      let changed = false;
-      const updated = existingUsers.map((u) => {
-        if (u.username === 'admin' && u.name !== 'Administrator Induk Kabupaten') {
-          changed = true;
-          return { ...u, name: 'Administrator Induk Kabupaten', role: 'admin_induk' as Role };
-        }
-        if (u.role === 'admin_kecamatan' && !u.district) {
-          changed = true;
-          return { ...u, district: 'Sambungmacan' };
-        }
-        if (u.role === 'bidan_desa') {
-          changed = true;
-          return { ...u, role: 'admin_desa' as Role };
-        }
-        return u;
-      });
+    const isFirstTime = !localStorage.getItem(STORAGE_KEYS.INITIALIZED);
 
-      // Merge any new default kecamatan accounts if missing
-      initialUsers.forEach((defU) => {
-        if (!updated.some((u) => u.username === defU.username)) {
-          updated.push(defU);
-          changed = true;
-        }
-      });
-
-      if (changed) {
-        safeSet(STORAGE_KEYS.USERS, updated);
+    if (isFirstTime) {
+      if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+        safeSet(STORAGE_KEYS.USERS, initialUsers);
       }
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
-      safeSet(STORAGE_KEYS.CURRENT_USER, initialUsers[0]); // default admin
+      if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
+        safeSet(STORAGE_KEYS.CURRENT_USER, initialUsers[0]); // default admin
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.VILLAGES)) {
+        safeSet(STORAGE_KEYS.VILLAGES, initialVillages);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.DISTRICTS)) {
+        safeSet(STORAGE_KEYS.DISTRICTS, initialDistricts);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
+        safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
+        safeSet(STORAGE_KEYS.RECORDS, []);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
+        safeSet(STORAGE_KEYS.LOGS, [
+          {
+            id: 'log-init',
+            timestamp: new Date().toISOString(),
+            username: 'system',
+            action: 'INISIALISASI_SISTEM',
+            details: 'Sistem Register Pelayanan KB Faskes diinisialisasi dengan data bersih',
+          },
+        ]);
+      }
+      localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     } else {
-      const cur = safeGet<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-      if (cur) {
-        if (cur.username === 'admin' && cur.name !== 'Administrator Induk Kabupaten') {
-          safeSet(STORAGE_KEYS.CURRENT_USER, { ...cur, name: 'Administrator Induk Kabupaten', role: 'admin_induk' });
-        } else if (cur.role === 'bidan_desa') {
-          safeSet(STORAGE_KEYS.CURRENT_USER, { ...cur, role: 'admin_desa' });
+      // Pastikan struktur dasar tetap valid tanpa mengembalikan data yang sudah dihapus pengguna
+      if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
+        safeSet(STORAGE_KEYS.RECORDS, []);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
+        safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
+        const users = safeGet<User[]>(STORAGE_KEYS.USERS, []);
+        if (users.length > 0) {
+          safeSet(STORAGE_KEYS.CURRENT_USER, users[0]);
         }
       }
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.VILLAGES)) {
-      safeSet(STORAGE_KEYS.VILLAGES, initialVillages);
-    } else {
-      const curVillages = safeGet<Village[]>(STORAGE_KEYS.VILLAGES, []);
-      let vilChanged = false;
-      const updatedVillages = curVillages.map((v) => {
-        if (!v.district) {
-          vilChanged = true;
-          return { ...v, district: initialFacilityProfile.district };
-        }
-        return v;
-      });
-      initialVillages.forEach((iv) => {
-        if (!updatedVillages.some((v) => v.name.toLowerCase() === iv.name.toLowerCase())) {
-          updatedVillages.push(iv);
-          vilChanged = true;
-        }
-      });
-      if (vilChanged) {
-        safeSet(STORAGE_KEYS.VILLAGES, updatedVillages);
-      }
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.DISTRICTS)) {
-      safeSet(STORAGE_KEYS.DISTRICTS, initialDistricts);
-    } else {
-      // Merge districts
-      const curDistricts = safeGet<District[]>(STORAGE_KEYS.DISTRICTS, []);
-      let distChanged = false;
-      initialDistricts.forEach((d) => {
-        if (!curDistricts.some((cd) => cd.name.toLowerCase() === d.name.toLowerCase())) {
-          curDistricts.push(d);
-          distChanged = true;
-        }
-      });
-      if (distChanged) {
-        safeSet(STORAGE_KEYS.DISTRICTS, curDistricts);
-      }
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
-      safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
-      safeSet(STORAGE_KEYS.RECORDS, []);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
-      safeSet(STORAGE_KEYS.LOGS, [
-        {
-          id: 'log-init',
-          timestamp: new Date().toISOString(),
-          username: 'system',
-          action: 'INISIALISASI_SISTEM',
-          details: 'Sistem Register Pelayanan KB Faskes diinisialisasi dengan data bersih',
-        },
-      ]);
     }
   },
 
@@ -174,6 +134,10 @@ export const StorageService = {
     const updated = [...users.filter((u) => u.id !== user.id), user];
     this.saveUsersLocallyOnly(updated);
     FirestoreService.saveUser(user);
+    const cur = this.getCurrentUser();
+    if (cur && cur.id === user.id) {
+      this.setCurrentUser(user);
+    }
   },
   deleteUser(userId: string): void {
     const users = this.getUsers();
@@ -189,6 +153,7 @@ export const StorageService = {
       safeSet(STORAGE_KEYS.CURRENT_USER, user);
     } else {
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      notifyChange(STORAGE_KEYS.CURRENT_USER);
     }
   },
 
@@ -254,7 +219,7 @@ export const StorageService = {
 
   // PATIENT RECORDS
   getRecords(): PatientRecord[] {
-    return safeGet<PatientRecord[]>(STORAGE_KEYS.RECORDS, initialSampleRecords);
+    return safeGet<PatientRecord[]>(STORAGE_KEYS.RECORDS, []);
   },
   saveRecordsLocallyOnly(records: PatientRecord[]): void {
     safeSet(STORAGE_KEYS.RECORDS, records);
@@ -282,15 +247,18 @@ export const StorageService = {
   updateRecord(updated: PatientRecord, currentUsername: string): void {
     const records = this.getRecords();
     const idx = records.findIndex((r) => r.id === updated.id);
+    const updatedWithTimestamp: PatientRecord = {
+      ...updated,
+      updatedAt: new Date().toISOString(),
+    };
     if (idx !== -1) {
-      records[idx] = {
-        ...updated,
-        updatedAt: new Date().toISOString(),
-      };
-      this.saveRecordsLocallyOnly(records);
-      FirestoreService.saveRecord(records[idx]);
-      this.logActivity(currentUsername, 'EDIT_REGISTER', `Mengubah data akseptor ${updated.wifeName} (${updated.registerNumber})`);
+      records[idx] = updatedWithTimestamp;
+    } else {
+      records.unshift(updatedWithTimestamp);
     }
+    this.saveRecordsLocallyOnly(records);
+    FirestoreService.saveRecord(updatedWithTimestamp);
+    this.logActivity(currentUsername, 'EDIT_REGISTER', `Mengubah data akseptor ${updated.wifeName} (${updated.registerNumber})`);
   },
 
   deleteRecord(id: string, currentUsername: string): void {
@@ -305,7 +273,8 @@ export const StorageService = {
   },
 
   clearAllRecords(currentUsername: string): void {
-    this.saveRecords([]);
+    this.saveRecordsLocallyOnly([]);
+    FirestoreService.clearAllRecords();
     this.logActivity(currentUsername, 'KOSONGKAN_DATA', 'Mengosongkan seluruh data register pelayanan KB');
   },
 

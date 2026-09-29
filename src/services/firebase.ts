@@ -42,6 +42,24 @@ const VILLAGES_COL = 'villages';
 const DISTRICTS_COL = 'districts';
 const FACILITY_COL = 'facility';
 const LOGS_COL = 'activity_logs';
+const SYSTEM_COL = 'system';
+
+// Membersihkan nilai undefined dari objek agar Firestore tidak melempar error
+// "Unsupported field value: undefined"
+function cleanPayload<T>(obj: T): any {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => cleanPayload(item));
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = typeof value === 'object' && value !== null ? cleanPayload(value) : value;
+    }
+  }
+  return result;
+}
 
 export const FirestoreService = {
   // Sync Realtime Users (HP & PC otomatis sinkron)
@@ -50,14 +68,12 @@ export const FirestoreService = {
     return onSnapshot(
       colRef,
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: User[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as User;
-            list.push({ ...data, id: d.id });
-          });
-          onUpdate(list);
-        }
+        const list: User[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as User;
+          list.push({ ...data, id: d.id });
+        });
+        onUpdate(list);
       },
       (err) => console.error('Error subscribeUsers:', err)
     );
@@ -66,7 +82,7 @@ export const FirestoreService = {
   async saveUser(user: User): Promise<void> {
     try {
       const docRef = doc(db, USERS_COL, user.id);
-      await setDoc(docRef, user, { merge: true });
+      await setDoc(docRef, cleanPayload(user), { merge: true });
     } catch (e) {
       console.error('Failed to save user to Firestore:', e);
     }
@@ -82,10 +98,21 @@ export const FirestoreService = {
 
   async syncAllUsers(users: User[]): Promise<void> {
     try {
+      const snap = await getDocs(collection(db, USERS_COL));
+      const activeIds = new Set(users.map((u) => u.id));
       const batch = writeBatch(db);
+
+      // Hapus data pengguna di cloud yang telah dihapus lokal
+      snap.forEach((d) => {
+        if (!activeIds.has(d.id)) {
+          batch.delete(d.ref);
+        }
+      });
+
+      // Simpan dan perbarui pengguna yang aktif
       for (const u of users) {
         const docRef = doc(db, USERS_COL, u.id);
-        batch.set(docRef, u, { merge: true });
+        batch.set(docRef, cleanPayload(u), { merge: true });
       }
       await batch.commit();
     } catch (e) {
@@ -99,14 +126,12 @@ export const FirestoreService = {
     return onSnapshot(
       colRef,
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: PatientRecord[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as PatientRecord;
-            list.push({ ...data, id: d.id });
-          });
-          onUpdate(list);
-        }
+        const list: PatientRecord[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as PatientRecord;
+          list.push({ ...data, id: d.id });
+        });
+        onUpdate(list);
       },
       (err) => console.error('Error subscribeRecords:', err)
     );
@@ -115,7 +140,7 @@ export const FirestoreService = {
   async saveRecord(record: PatientRecord): Promise<void> {
     try {
       const docRef = doc(db, RECORDS_COL, record.id);
-      await setDoc(docRef, record, { merge: true });
+      await setDoc(docRef, cleanPayload(record), { merge: true });
     } catch (e) {
       console.error('Failed to save record to Firestore:', e);
     }
@@ -129,16 +154,46 @@ export const FirestoreService = {
     }
   },
 
+  async clearAllRecords(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, RECORDS_COL));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
+      snap.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error('Failed clearAllRecords in Firestore:', e);
+    }
+  },
+
   async syncAllRecords(records: PatientRecord[]): Promise<void> {
     try {
-      // Chunk batches by 400
+      const snap = await getDocs(collection(db, RECORDS_COL));
+      const activeIds = new Set(records.map((r) => r.id));
+
+      // Hapus dokumen yang sudah dihapus oleh pengguna
+      const deleteBatch = writeBatch(db);
+      let deleteCount = 0;
+      snap.forEach((d) => {
+        if (!activeIds.has(d.id)) {
+          deleteBatch.delete(d.ref);
+          deleteCount++;
+        }
+      });
+      if (deleteCount > 0) {
+        await deleteBatch.commit();
+      }
+
+      // Chunk batches by 400 untuk simpan dan update
       const chunkSize = 400;
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         for (const r of chunk) {
           const docRef = doc(db, RECORDS_COL, r.id);
-          batch.set(docRef, r, { merge: true });
+          batch.set(docRef, cleanPayload(r), { merge: true });
         }
         await batch.commit();
       }
@@ -153,13 +208,11 @@ export const FirestoreService = {
     return onSnapshot(
       colRef,
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Village[] = [];
-          snapshot.forEach((d) => {
-            list.push(d.data() as Village);
-          });
-          onUpdate(list);
-        }
+        const list: Village[] = [];
+        snapshot.forEach((d) => {
+          list.push({ ...(d.data() as Village), id: d.id });
+        });
+        onUpdate(list);
       },
       (err) => console.error('Error subscribeVillages:', err)
     );
@@ -168,7 +221,7 @@ export const FirestoreService = {
   async saveVillage(village: Village): Promise<void> {
     try {
       const docRef = doc(db, VILLAGES_COL, village.id);
-      await setDoc(docRef, village, { merge: true });
+      await setDoc(docRef, cleanPayload(village), { merge: true });
     } catch (e) {
       console.error('Failed to save village to Firestore:', e);
     }
@@ -184,10 +237,21 @@ export const FirestoreService = {
 
   async syncAllVillages(villages: Village[]): Promise<void> {
     try {
+      const snap = await getDocs(collection(db, VILLAGES_COL));
+      const activeIds = new Set(villages.map((v) => v.id));
       const batch = writeBatch(db);
+
+      // Hapus desa yang telah dihapus
+      snap.forEach((d) => {
+        if (!activeIds.has(d.id)) {
+          batch.delete(d.ref);
+        }
+      });
+
+      // Simpan atau perbarui desa aktif
       for (const v of villages) {
         const docRef = doc(db, VILLAGES_COL, v.id);
-        batch.set(docRef, v, { merge: true });
+        batch.set(docRef, cleanPayload(v), { merge: true });
       }
       await batch.commit();
     } catch (e) {
@@ -201,13 +265,11 @@ export const FirestoreService = {
     return onSnapshot(
       colRef,
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: District[] = [];
-          snapshot.forEach((d) => {
-            list.push(d.data() as District);
-          });
-          onUpdate(list);
-        }
+        const list: District[] = [];
+        snapshot.forEach((d) => {
+          list.push({ ...(d.data() as District), id: d.id });
+        });
+        onUpdate(list);
       },
       (err) => console.error('Error subscribeDistricts:', err)
     );
@@ -216,7 +278,7 @@ export const FirestoreService = {
   async saveDistrict(district: District): Promise<void> {
     try {
       const docRef = doc(db, DISTRICTS_COL, district.id);
-      await setDoc(docRef, district, { merge: true });
+      await setDoc(docRef, cleanPayload(district), { merge: true });
     } catch (e) {
       console.error('Failed to save district to Firestore:', e);
     }
@@ -232,10 +294,21 @@ export const FirestoreService = {
 
   async syncAllDistricts(districts: District[]): Promise<void> {
     try {
+      const snap = await getDocs(collection(db, DISTRICTS_COL));
+      const activeIds = new Set(districts.map((d) => d.id));
       const batch = writeBatch(db);
+
+      // Hapus kecamatan yang telah dihapus
+      snap.forEach((d) => {
+        if (!activeIds.has(d.id)) {
+          batch.delete(d.ref);
+        }
+      });
+
+      // Simpan atau perbarui kecamatan aktif
       for (const d of districts) {
         const docRef = doc(db, DISTRICTS_COL, d.id);
-        batch.set(docRef, d, { merge: true });
+        batch.set(docRef, cleanPayload(d), { merge: true });
       }
       await batch.commit();
     } catch (e) {
@@ -260,13 +333,13 @@ export const FirestoreService = {
   async saveFacility(facility: FacilityProfile): Promise<void> {
     try {
       const docRef = doc(db, FACILITY_COL, 'current');
-      await setDoc(docRef, facility, { merge: true });
+      await setDoc(docRef, cleanPayload(facility), { merge: true });
     } catch (e) {
       console.error('Failed to save facility:', e);
     }
   },
 
-  // Seed data awal jika Firestore masih kosong
+  // Inisialisasi awal ke Firestore sekali saja (tidak akan menimpa penghapusan data pengguna)
   async initializeCloudDatabase(initialData: {
     users: User[];
     records: PatientRecord[];
@@ -275,14 +348,25 @@ export const FirestoreService = {
     facility: FacilityProfile;
   }): Promise<void> {
     try {
+      const initDocRef = doc(db, SYSTEM_COL, 'cloud_init');
+      let isAlreadyInitialized = false;
+      try {
+        const initSnap = await getDocFromServer(initDocRef);
+        if (initSnap.exists()) {
+          isAlreadyInitialized = true;
+        }
+      } catch {
+        // Abaikan jika dokumen belum ada
+      }
+
+      if (isAlreadyInitialized) {
+        // Jangan timpa kembali data yang sudah dihapus oleh pengguna sebelumnya
+        return;
+      }
+
       const userSnap = await getDocs(collection(db, USERS_COL));
       if (userSnap.empty) {
         await this.syncAllUsers(initialData.users);
-      }
-
-      const recSnap = await getDocs(collection(db, RECORDS_COL));
-      if (recSnap.empty) {
-        await this.syncAllRecords(initialData.records);
       }
 
       const vilSnap = await getDocs(collection(db, VILLAGES_COL));
@@ -301,6 +385,9 @@ export const FirestoreService = {
       if (facSnap.empty) {
         await this.saveFacility(initialData.facility);
       }
+
+      // Tandai bahwa basis data sudah diinisialisasi agar tidak pernah me-restore paksa data yang sengaja dihapus
+      await setDoc(initDocRef, { initializedAt: new Date().toISOString() });
     } catch (e) {
       console.error('Initial cloud seed error:', e);
     }
