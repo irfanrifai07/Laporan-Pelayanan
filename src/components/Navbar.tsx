@@ -97,24 +97,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center space-x-3 text-emerald-200 text-[11px]">
               {/* Kecamatan Switcher for Admin Induk */}
               {(currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten') ? (
-                <div className="flex items-center space-x-1.5 bg-emerald-950/90 px-2.5 py-0.5 rounded-lg border border-emerald-400/50 text-white">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                  <span className="font-bold text-[11px] text-emerald-200">Wilayah Kerja:</span>
-                  <select
-                    value={currentUser.district || 'SEMUA'}
-                    onChange={(e) => onSelectDistrict && onSelectDistrict(e.target.value)}
-                    className="bg-transparent text-white font-extrabold text-[11px] focus:outline-none cursor-pointer"
-                    title="Pilih Kecamatan yang Ingin Diawasi / Dikelola"
-                  >
-                    <option value="SEMUA" className="text-slate-900 bg-white">
-                      🌐 Semua Kecamatan ({facility.regency})
-                    </option>
-                    {districts.map((d) => (
-                      <option key={d.id} value={d.name} className="text-slate-900 bg-white">
-                        🏢 Kec. {d.name}
+                <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center space-x-1.5 bg-emerald-950/90 px-2.5 py-0.5 rounded-lg border border-emerald-400/50 text-white">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                    <span className="font-bold text-[11px] text-emerald-200">Wilayah Kerja:</span>
+                    <select
+                      value={currentUser.district || 'SEMUA'}
+                      onChange={(e) => onSelectDistrict && onSelectDistrict(e.target.value)}
+                      className="bg-transparent text-white font-extrabold text-[11px] focus:outline-none cursor-pointer"
+                      title="Pilih Kecamatan yang Ingin Diawasi / Dikelola"
+                    >
+                      <option value="SEMUA" className="text-slate-900 bg-white">
+                        🌐 Semua Kecamatan ({facility.regency})
                       </option>
-                    ))}
-                  </select>
+                      {districts.map((d) => (
+                        <option key={d.id} value={d.name} className="text-slate-900 bg-white">
+                          🏢 Kec. {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('admin')}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition shadow-2xs border border-emerald-400/40"
+                    title="Tambah atau Kelola Wilayah Kecamatan se-Kabupaten"
+                  >
+                    <span>+ Kecamatan</span>
+                  </button>
                 </div>
               ) : currentUser?.role === 'admin_kecamatan' ? (
                 <div className="flex items-center space-x-1 bg-blue-900/60 px-2 py-0.5 rounded-lg border border-blue-400/30 text-blue-100">

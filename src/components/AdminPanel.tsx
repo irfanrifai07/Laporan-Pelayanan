@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityLog, District, FacilityProfile, Role, User, Village } from '../types';
 import { StorageService } from '../services/storage';
+import { FirestoreService } from '../services/firebase';
 import {
   Building2,
   MapPin,
@@ -63,8 +64,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const isKecamatanAdmin = currentUser?.role === 'admin_kecamatan';
   const isSuperAdmin = currentUser?.role === 'admin_induk' || currentUser?.role === 'admin_kabupaten' || !currentUser;
 
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'villages' | 'users' | 'backup' | 'logs'>(
-    isKecamatanAdmin ? 'users' : 'profile'
+  const [activeSubTab, setActiveSubTab] = useState<'districts' | 'villages' | 'profile' | 'users' | 'backup' | 'logs'>(
+    isKecamatanAdmin ? 'users' : 'districts'
   );
 
   // Sinkronkan data pengguna segar saat subtab akun dibuka
@@ -216,25 +217,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setProfileSaveSuccess(false), 3000);
   };
 
-  // DISTRICT HANDLERS
-  const handleAddDistrict = (e: React.FormEvent) => {
+  // DISTRICT HANDLERS (ADMIN INDUK)
+  const handleAddDistrict = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = newDistrictName.trim();
     if (!cleanName) return;
 
-    if (districts.some((d) => d.name.toLowerCase() === cleanName.toLowerCase())) {
+    if (districts.some((d) => d.name.trim().toLowerCase() === cleanName.toLowerCase())) {
       setStatusMessage({ text: `Kecamatan "${cleanName}" sudah terdaftar.`, type: 'error' });
       return;
     }
 
     const newD: District = {
-      id: 'kec-' + Date.now(),
+      id: 'kec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       name: cleanName,
     };
 
     const updated = [...districts, newD];
+    // 1. Update React state seketika
     onUpdateDistricts(updated);
+    // 2. Simpan ke local storage
     StorageService.saveSingleDistrict(newD);
+    // 3. Simpan dan sinkronkan ke Cloud Firestore seketika
+    await FirestoreService.saveDistrict(newD);
+    FirestoreService.syncAllDistricts(updated);
+
     StorageService.logActivity(
       currentUser?.username || 'admin',
       'TAMBAH_KECAMATAN',
@@ -242,7 +249,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     setNewDistrictName('');
-    setStatusMessage({ text: `Kecamatan ${newD.name} berhasil ditambahkan!`, type: 'success' });
+    setStatusMessage({
+      text: `✓ Kecamatan ${newD.name} berhasil ditambahkan dan langsung tersimpan!`,
+      type: 'success',
+    });
     setTimeout(() => setStatusMessage(null), 3500);
   };
 
@@ -772,8 +782,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               { id: 'logs', label: 'Riwayat Entri Pelayanan', icon: History },
             ]
           : [
+              { id: 'districts', label: `Kelola Wilayah Kecamatan (${districts.length})`, icon: Layers },
+              { id: 'villages', label: `Kelola Desa Binaan (${villages.length})`, icon: MapPin },
               { id: 'profile', label: 'Profil Faskes & Pimpinan', icon: Building2 },
-              { id: 'villages', label: `Wilayah: Kecamatan & Desa (${districts.length} Kec, ${villages.length} Desa)`, icon: MapPin },
               { id: 'users', label: `Semua Akun Pengguna (${users.length})`, icon: Users },
               { id: 'backup', label: 'Cadangkan & Pulihkan', icon: Database },
               { id: 'logs', label: 'Log Aktivitas Sistem', icon: History },
@@ -789,7 +800,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 isActive
                   ? isKecamatanAdmin
                     ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-purple-700 text-white shadow-xs'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -1000,31 +1011,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* SUBTAB 2: WILAYAH (KECAMATAN & DESA BINAAN) */}
-      {activeSubTab === 'villages' && (
+      {/* SUBTAB: KELOLA WILAYAH KECAMATAN (HANYA ADMIN INDUK) */}
+      {activeSubTab === 'districts' && (
         <div className="space-y-6">
-          {/* BAGIAN 1: MANAJEMEN WILAYAH KECAMATAN (HANYA ADMIN INDUK) */}
-          {isSuperAdmin && (
-            <div className="bg-white p-5 rounded-2xl border border-purple-200/80 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-100">
-                <div>
-                  <h3 className="text-sm font-bold text-purple-950 flex items-center space-x-2">
-                    <span className="p-1.5 bg-purple-100 text-purple-800 rounded-lg">
-                      <Layers className="w-4 h-4" />
-                    </span>
-                    <span>1. Manajemen Wilayah Kecamatan se-Kabupaten</span>
-                  </h3>
-                  <p className="text-xs text-purple-700/80 mt-0.5">
-                    Admin Induk dapat menambah kecamatan, mengubah nama, dan menentukan siapa Admin Kecamatan yang bertanggung jawab.
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-purple-900 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full self-start sm:self-auto">
-                  {districts.length} Kecamatan Terdaftar
-                </span>
+          <div className="bg-white p-5 rounded-2xl border border-purple-200/80 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-100">
+              <div>
+                <h3 className="text-sm font-bold text-purple-950 flex items-center space-x-2">
+                  <span className="p-1.5 bg-purple-100 text-purple-800 rounded-lg">
+                    <Layers className="w-4 h-4" />
+                  </span>
+                  <span>Manajemen Wilayah Kecamatan se-Kabupaten</span>
+                </h3>
+                <p className="text-xs text-purple-700/80 mt-0.5">
+                  Admin Induk dapat menambah kecamatan baru, mengubah nama, dan menentukan akun Admin Kecamatan yang bertanggung jawab. Data langsung tersimpan seketika di sistem dan cloud Firestore.
+                </p>
               </div>
+              <span className="text-xs font-bold text-purple-900 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full self-start sm:self-auto shadow-2xs">
+                {districts.length} Kecamatan Terdaftar
+              </span>
+            </div>
 
-              {/* Form Tambah Kecamatan Baru */}
-              <form onSubmit={handleAddDistrict} className="flex flex-col sm:flex-row gap-2.5 items-end">
+            {/* Form Tambah Kecamatan Baru */}
+            <form onSubmit={handleAddDistrict} className="p-4 bg-purple-50/50 rounded-xl border border-purple-200/70 space-y-3">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
+                <span className="text-xs font-bold text-purple-900">Tambah Kecamatan Baru</span>
+                <span className="text-[11px] text-purple-600 font-medium">(Data Langsung Tersimpan Otomatis ke Cloud)</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5 items-end">
                 <div className="flex-1 w-full">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Nama Kecamatan Baru <span className="text-rose-500">*</span>
@@ -1033,119 +1048,160 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={newDistrictName}
                     onChange={(e) => setNewDistrictName(e.target.value)}
-                    placeholder="Contoh: Gondang, Sambungmacan, Ngrampal, Masaran..."
+                    placeholder="Contoh: Gondang, Masaran, Jenar, Ngrampal, Kedawung..."
                     required
-                    className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                    className="w-full text-xs py-2.5 px-3 bg-white border border-purple-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 shadow-2xs font-medium"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto py-2 px-4 bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
+                  className="w-full sm:w-auto py-2.5 px-5 bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Tambah Kecamatan</span>
+                  <span>+ Tambah & Simpan Kecamatan</span>
                 </button>
-              </form>
+              </div>
+            </form>
 
-              {/* Grid Kartu Kecamatan & Penentuan Admin */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
-                {districts.map((d) => {
-                  const villagesInD = villages.filter(
-                    (v) => (v.district || '').toLowerCase() === d.name.toLowerCase()
-                  );
-                  const assignedAdmin = users.find(
-                    (u) =>
-                      u.role === 'admin_kecamatan' &&
-                      (u.district || '').toLowerCase() === d.name.toLowerCase()
-                  );
+            {/* Grid Kartu Kecamatan & Penentuan Admin */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
+              {districts.map((d) => {
+                const villagesInD = villages.filter(
+                  (v) => (v.district || '').toLowerCase() === d.name.toLowerCase()
+                );
+                const assignedAdmin = users.find(
+                  (u) =>
+                    u.role === 'admin_kecamatan' &&
+                    (u.district || '').toLowerCase() === d.name.toLowerCase()
+                );
 
-                  return (
-                    <div
-                      key={d.id}
-                      className="p-3.5 bg-gradient-to-br from-slate-50 to-purple-50/40 rounded-xl border border-slate-200 hover:border-purple-300 transition space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="p-1 bg-white border border-purple-200 rounded-md shadow-2xs">
-                            <Building2 className="w-4 h-4 text-purple-700" />
-                          </span>
-                          <span className="font-bold text-slate-900 text-sm">Kec. {d.name}</span>
-                        </div>
-                        <span className="text-[11px] font-bold text-purple-800 bg-white border border-purple-200 px-2 py-0.5 rounded-full">
-                          {villagesInD.length} Desa
+                return (
+                  <div
+                    key={d.id}
+                    className="p-3.5 bg-gradient-to-br from-slate-50 to-purple-50/40 rounded-xl border border-slate-200 hover:border-purple-300 transition space-y-3 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="p-1 bg-white border border-purple-200 rounded-md shadow-2xs">
+                          <Building2 className="w-4 h-4 text-purple-700" />
                         </span>
+                        <span className="font-bold text-slate-900 text-sm">Kec. {d.name}</span>
+                      </div>
+                      <span className="text-[11px] font-bold text-purple-800 bg-white border border-purple-200 px-2 py-0.5 rounded-full">
+                        {villagesInD.length} Desa
+                      </span>
+                    </div>
+
+                    {/* Info Admin Kecamatan */}
+                    <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Admin Kecamatan:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openDistrictAdminModal(d)}
+                          className="text-[10px] font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer flex items-center space-x-1"
+                        >
+                          <UserCheck className="w-3 h-3 text-purple-600" />
+                          <span>{assignedAdmin ? 'Ganti Admin' : 'Tetapkan Admin'}</span>
+                        </button>
                       </div>
 
-                      {/* Info Admin Kecamatan */}
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 space-y-1.5">
+                      {assignedAdmin ? (
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Admin Kecamatan:
+                          <div>
+                            <div className="font-bold text-slate-800 text-xs">{assignedAdmin.name}</div>
+                            <div className="text-[10px] text-purple-700 font-mono">
+                              @{assignedAdmin.username} {assignedAdmin.nip ? `• NIP: ${assignedAdmin.nip}` : ''}
+                            </div>
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
+                            Aktif
                           </span>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center justify-between">
+                          <span>⚠️ Belum ada admin ditugaskan</span>
                           <button
                             type="button"
                             onClick={() => openDistrictAdminModal(d)}
-                            className="text-[10px] font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer flex items-center space-x-1"
+                            className="font-bold text-purple-800 underline text-[10px] ml-1 cursor-pointer"
                           >
-                            <UserCheck className="w-3 h-3 text-purple-600" />
-                            <span>{assignedAdmin ? 'Ganti Admin' : 'Tetapkan Admin'}</span>
+                            Tentukan
                           </button>
                         </div>
-
-                        {assignedAdmin ? (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-bold text-slate-800 text-xs">{assignedAdmin.name}</div>
-                              <div className="text-[10px] text-purple-700 font-mono">
-                                @{assignedAdmin.username} {assignedAdmin.nip ? `• NIP: ${assignedAdmin.nip}` : ''}
-                              </div>
-                            </div>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
-                              Aktif
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center justify-between">
-                            <span>⚠️ Belum ada admin ditugaskan</span>
-                            <button
-                              type="button"
-                              onClick={() => openDistrictAdminModal(d)}
-                              className="font-bold text-purple-800 underline text-[10px] ml-1 cursor-pointer"
-                            >
-                              Tentukan
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingDistrict(d);
-                            setEditDistrictName(d.name);
-                          }}
-                          className="text-[11px] text-slate-600 hover:text-purple-700 flex items-center space-x-1 cursor-pointer font-medium"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Ubah Nama</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteDistrict(d)}
-                          className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center space-x-1 cursor-pointer font-medium"
-                          title="Hapus Kecamatan"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Hapus</span>
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
+
+                    {/* Action buttons */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingDistrict(d);
+                          setEditDistrictName(d.name);
+                        }}
+                        className="text-[11px] text-slate-600 hover:text-purple-700 flex items-center space-x-1 cursor-pointer font-medium"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Ubah Nama</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewVillageDistrict(d.name);
+                          setActiveSubTab('villages');
+                        }}
+                        className="text-[11px] text-emerald-700 hover:text-emerald-900 flex items-center space-x-1 cursor-pointer font-semibold"
+                        title="Tambah desa binaan di kecamatan ini"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>+ Desa</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDistrict(d)}
+                        className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center space-x-1 cursor-pointer font-medium"
+                        title="Hapus Kecamatan"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Hapus</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB 2: WILAYAH (DESA BINAAN) */}
+      {activeSubTab === 'villages' && (
+        <div className="space-y-6">
+          {/* Quick banner ke Kelola Kecamatan untuk Admin Induk */}
+          {isSuperAdmin && (
+            <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-2.5">
+                <span className="p-2 bg-purple-100 text-purple-800 rounded-xl">
+                  <Layers className="w-4 h-4" />
+                </span>
+                <div>
+                  <h4 className="text-xs font-bold text-purple-950">Ingin menambah atau mengelola Wilayah Kecamatan?</h4>
+                  <p className="text-[11px] text-purple-700">Tersedia {districts.length} kecamatan se-kabupaten dengan konfigurasi admin masing-masing.</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('districts')}
+                className="px-3.5 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-2xs cursor-pointer self-end sm:self-auto"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Buka Kelola Kecamatan</span>
+              </button>
             </div>
           )}
 

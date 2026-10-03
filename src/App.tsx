@@ -198,9 +198,15 @@ export default function App() {
     });
 
     const unsubDistricts = FirestoreService.subscribeDistricts((cloudDistricts) => {
-      if (cloudDistricts) {
+      if (cloudDistricts && cloudDistricts.length > 0) {
         StorageService.saveDistrictsLocallyOnly(cloudDistricts);
         setDistricts(cloudDistricts);
+      } else if (cloudDistricts && cloudDistricts.length === 0) {
+        // Jika di cloud kosong tapi di lokal ada kecamatan, sinkronkan lokal ke cloud
+        const localDistricts = StorageService.getDistricts();
+        if (localDistricts.length > 0) {
+          FirestoreService.syncAllDistricts(localDistricts);
+        }
       }
     });
 

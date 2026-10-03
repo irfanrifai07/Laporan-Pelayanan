@@ -339,7 +339,7 @@ export const FirestoreService = {
     }
   },
 
-  // Inisialisasi awal ke Firestore sekali saja (tidak akan menimpa penghapusan data pengguna)
+  // Inisialisasi awal ke Firestore (memastikan koleksi awal seperti kecamatan & faskes terisi)
   async initializeCloudDatabase(initialData: {
     users: User[];
     records: PatientRecord[];
@@ -348,6 +348,29 @@ export const FirestoreService = {
     facility: FacilityProfile;
   }): Promise<void> {
     try {
+      // 1. Cek dan pastikan koleksi kecamatan terisi jika masih kosong di cloud
+      if (initialData.districts && initialData.districts.length > 0) {
+        try {
+          const distSnap = await getDocs(collection(db, DISTRICTS_COL));
+          if (distSnap.empty) {
+            await this.syncAllDistricts(initialData.districts);
+          }
+        } catch (err) {
+          console.warn('Gagal cek awal kecamatan cloud:', err);
+        }
+      }
+
+      // 2. Cek dan pastikan profil faskes terisi
+      try {
+        const facSnap = await getDocs(collection(db, FACILITY_COL));
+        if (facSnap.empty) {
+          await this.saveFacility(initialData.facility);
+        }
+      } catch (err) {
+        console.warn('Gagal cek faskes cloud:', err);
+      }
+
+      // 3. Cek desa dan users
       const initDocRef = doc(db, SYSTEM_COL, 'cloud_init');
       let isAlreadyInitialized = false;
       try {
@@ -359,35 +382,20 @@ export const FirestoreService = {
         // Abaikan jika dokumen belum ada
       }
 
-      if (isAlreadyInitialized) {
-        // Jangan timpa kembali data yang sudah dihapus oleh pengguna sebelumnya
-        return;
-      }
-
-      const userSnap = await getDocs(collection(db, USERS_COL));
-      if (userSnap.empty) {
-        await this.syncAllUsers(initialData.users);
-      }
-
-      const vilSnap = await getDocs(collection(db, VILLAGES_COL));
-      if (vilSnap.empty) {
-        await this.syncAllVillages(initialData.villages);
-      }
-
-      if (initialData.districts) {
-        const distSnap = await getDocs(collection(db, DISTRICTS_COL));
-        if (distSnap.empty) {
-          await this.syncAllDistricts(initialData.districts);
+      if (!isAlreadyInitialized) {
+        const userSnap = await getDocs(collection(db, USERS_COL));
+        if (userSnap.empty) {
+          await this.syncAllUsers(initialData.users);
         }
-      }
 
-      const facSnap = await getDocs(collection(db, FACILITY_COL));
-      if (facSnap.empty) {
-        await this.saveFacility(initialData.facility);
-      }
+        const vilSnap = await getDocs(collection(db, VILLAGES_COL));
+        if (vilSnap.empty) {
+          await this.syncAllVillages(initialData.villages);
+        }
 
-      // Tandai bahwa basis data sudah diinisialisasi agar tidak pernah me-restore paksa data yang sengaja dihapus
-      await setDoc(initDocRef, { initializedAt: new Date().toISOString() });
+        // Tandai bahwa basis data sudah diinisialisasi
+        await setDoc(initDocRef, { initializedAt: new Date().toISOString() });
+      }
     } catch (e) {
       console.error('Initial cloud seed error:', e);
     }
