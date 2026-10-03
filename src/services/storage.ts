@@ -67,11 +67,11 @@ export const StorageService = {
     // Bersihkan data contoh lawas jika ada
     localStorage.removeItem('kb_faskes_patient_records_v1');
 
-    // Kosongkan seluruh desa sesuai instruksi pengguna ("Kosongkan semua nama desa")
-    if (!localStorage.getItem('kb_p3akb_villages_cleared_v4')) {
+    // Kosongkan seluruh desa sesuai permintaan pengguna
+    if (!localStorage.getItem('kb_p3akb_villages_cleared_v2')) {
       safeSet(STORAGE_KEYS.VILLAGES, []);
       FirestoreService.clearAllVillages();
-      localStorage.setItem('kb_p3akb_villages_cleared_v4', 'true');
+      localStorage.setItem('kb_p3akb_villages_cleared_v2', 'true');
     }
 
     const isFirstTime = !localStorage.getItem(STORAGE_KEYS.INITIALIZED);
