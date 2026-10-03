@@ -97,9 +97,22 @@
         "name": { "type": "string" }
       },
       "required": ["id", "name"]
+    },
+    "System": {
+      "title": "System",
+      "description": "System state and initialization metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "initializedAt": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/system/{docId}": {
+      "schema": "System",
+      "description": "System initialization and health check data"
+    },
     "/districts/{districtId}": {
       "schema": "District",
       "description": "Administrative districts (kecamatan)"

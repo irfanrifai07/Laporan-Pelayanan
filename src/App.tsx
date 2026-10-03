@@ -383,12 +383,12 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-6 text-slate-500 text-xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-slate-800">SIM-KB Faskes</span>
+            <span className="font-bold text-slate-800">SIM Pelayanan KB Dinas P3AKB Bojonegoro</span>
             <span>•</span>
-            <span>Sistem Register & Rekapitulasi Kontrasepsi (Format F/II/KB BKKBN)</span>
+            <span>Format Resmi BKKBN (Register & Rekapitulasi F/II/KB)</span>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center space-x-1">
-            <span>Dikelola oleh {facility.name}</span>
+            <span>Dinas Pemberdayaan Perempuan, Perlindungan Anak dan KB Kab. Bojonegoro</span>
           </div>
         </div>
       </footer>

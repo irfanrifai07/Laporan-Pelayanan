@@ -555,6 +555,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const handleClearAllVillages = () => {
+    if (
+      window.confirm(
+        'PERINGATAN: Apakah Anda yakin ingin mengosongkan seluruh data nama desa? Seluruh desa binaan akan dihapus menjadi 0 desa.'
+      )
+    ) {
+      onUpdateVillages([]);
+      StorageService.clearAllVillages();
+      StorageService.logActivity(
+        currentUser?.username || 'admin',
+        'KOSONGKAN_SEMUA_DESA',
+        'Mengosongkan seluruh nama desa binaan di kabupaten'
+      );
+      setStatusMessage({ text: '✓ Seluruh nama desa berhasil dikosongkan.', type: 'success' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    }
+  };
+
   // USER HANDLERS
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -745,13 +763,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <span>
               {isKecamatanAdmin
                 ? '🏢 Panel Pengawasan Wilayah & Manajemen Admin Desa'
-                : '👑 Panel Pengaturan Faskes & Kendali Admin Induk Kabupaten'}
+                : '👑 Panel Pengaturan Dinas P3AKB & Kendali Admin Induk Kabupaten'}
             </span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {isKecamatanAdmin
               ? 'Membawahi seluruh akun Admin Desa (Petugas Entri), status desa binaan, dan riwayat entri pelayanan di kecamatan'
-              : 'Mengendalikan seluruh konfigurasi tingkat Kabupaten: profil faskes, pimpinan, akun Admin Kecamatan & Admin Desa, wilayah, pencadangan & pemulihan sistem'}
+              : 'Mengendalikan seluruh konfigurasi tingkat Kabupaten: profil Dinas P3AKB Bojonegoro, pimpinan, akun Admin Kecamatan & Admin Desa, wilayah kecamatan, pencadangan & pemulihan sistem'}
           </p>
         </div>
 
@@ -784,7 +802,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           : [
               { id: 'districts', label: `Kelola Wilayah Kecamatan (${districts.length})`, icon: Layers },
               { id: 'villages', label: `Kelola Desa Binaan (${villages.length})`, icon: MapPin },
-              { id: 'profile', label: 'Profil Faskes & Pimpinan', icon: Building2 },
+              { id: 'profile', label: 'Profil Dinas & Pimpinan', icon: Building2 },
               { id: 'users', label: `Semua Akun Pengguna (${users.length})`, icon: Users },
               { id: 'backup', label: 'Cadangkan & Pulihkan', icon: Database },
               { id: 'logs', label: 'Log Aktivitas Sistem', icon: History },
@@ -811,12 +829,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         })}
       </div>
 
-      {/* SUBTAB 1: PROFIL FASKES */}
+      {/* SUBTAB 1: PROFIL DINAS P3AKB */}
       {activeSubTab === 'profile' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Profil Fasilitas Kesehatan (Faskes KB)</h3>
+              <h3 className="text-sm font-bold text-slate-900">Profil Dinas P3AKB Kabupaten Bojonegoro & Pimpinan</h3>
               <p className="text-xs text-slate-500">
                 Informasi ini akan tercetak otomatis pada Kop Surat dan Lembar Laporan Formulir F/II/KB
               </p>
@@ -839,7 +857,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nama Fasilitas Kesehatan <span className="text-rose-500">*</span>
+                  Nama Instansi / Dinas <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -865,7 +883,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kode Faskes KB BKKBN
+                  Kode Instansi / Balai KB BKKBN
                 </label>
                 <input
                   type="text"
@@ -877,7 +895,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kecamatan
+                  Kecamatan Kantor
                 </label>
                 <input
                   type="text"
@@ -901,7 +919,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Alamat Lengkap Faskes
+                  Alamat Lengkap Kantor Dinas
                 </label>
                 <input
                   type="text"
@@ -932,7 +950,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Pimpinan */}
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                  <span className="text-xs font-bold text-emerald-800 block">Pimpinan Faskes / Kepala Puskesmas</span>
+                  <span className="text-xs font-bold text-emerald-800 block">Kepala Dinas P3AKB Bojonegoro (Pimpinan)</span>
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
                     <input
@@ -963,9 +981,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Bidan Koordinator */}
+                {/* Bidan Koordinator / Kepala Bidang KB */}
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                  <span className="text-xs font-bold text-teal-800 block">Pengelola KB / Bidan Koordinator</span>
+                  <span className="text-xs font-bold text-teal-800 block">Kepala Bidang Pengendalian Penduduk & KB (Dalduk KB)</span>
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
                     <input
@@ -1209,10 +1227,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-4">
             {/* Form Tambah Desa Binaan Baru */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-              <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center space-x-2">
-                <Plus className="w-4 h-4 text-emerald-600" />
-                <span>Tambah Desa Binaan Baru</span>
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <Plus className="w-4 h-4 text-emerald-600" />
+                  <span>Tambah Desa Binaan Baru</span>
+                </h3>
+                {isSuperAdmin && villages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllVillages}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer self-start sm:self-auto"
+                    title="Kosongkan seluruh data nama desa"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Kosongkan Semua Desa</span>
+                  </button>
+                )}
+              </div>
               <form onSubmit={handleAddVillage} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1316,7 +1347,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Daftar Desa Dikelompokkan per Kecamatan */}
-            <div className="space-y-4">
+            {villages.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800">Semua Data Nama Desa Telah Kosong (0 Desa)</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Seluruh nama desa binaan telah dikosongkan. Anda dapat menambahkan nama desa baru sesuai kebutuhan per kecamatan menggunakan formulir &ldquo;Tambah Desa Binaan Baru&rdquo; di atas.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {(districtFilter === 'SEMUA'
                 ? districts
                 : districts.filter((d) => d.name.toLowerCase() === districtFilter.toLowerCase())
@@ -1508,6 +1550,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 );
               })}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1792,7 +1835,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
               <h4 className="text-sm font-bold text-slate-900">Unduh Cadangan Data</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Mengekspor seluruh data profil faskes, desa binaan, akun pengguna, dan seluruh catatan register pelayanan KB ke dalam format file JSON.
+                Mengekspor seluruh data profil dinas P3AKB, kecamatan, desa binaan, akun pengguna, dan seluruh catatan register pelayanan KB ke dalam format file JSON.
               </p>
               <button
                 onClick={handleDownloadBackup}
@@ -1833,7 +1876,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <span>Kosongkan Seluruh Data Register Pasien</span>
               </h4>
               <p className="text-[11px] text-slate-600 mt-0.5">
-                Menghapus seluruh catatan rekam pelayanan KB pasien agar sistem bersih menjadi 0 data untuk pencatatan baru. Data profil faskes, desa, dan akun pengguna tetap aman tersimpan.
+                Menghapus seluruh catatan rekam pelayanan KB pasien agar sistem bersih menjadi 0 data untuk pencatatan baru. Data profil dinas P3AKB, kecamatan, desa, dan akun pengguna tetap aman tersimpan.
               </p>
             </div>
             <button

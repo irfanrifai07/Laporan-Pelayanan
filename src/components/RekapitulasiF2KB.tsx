@@ -138,7 +138,7 @@ export const RekapitulasiF2KB: React.FC<RekapitulasiF2KBProps> = ({ facility, vi
             <span>Rekapitulasi Pelayanan Kontrasepsi Bulanan (Format F/II/KB)</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Laporan agregasi bulanan resmi fasilitas kesehatan sesuai standar BKKBN
+            Laporan agregasi bulanan resmi pelayanan KB Dinas P3AKB Bojonegoro sesuai standar BKKBN
           </p>
         </div>
 
@@ -175,7 +175,7 @@ export const RekapitulasiF2KB: React.FC<RekapitulasiF2KBProps> = ({ facility, vi
               onChange={(e) => setSelectedVillage(e.target.value)}
               className="text-xs font-medium bg-transparent border-none focus:outline-none text-slate-800"
             >
-              <option value="SEMUA">Wilayah: Semua Desa (Puskesmas)</option>
+              <option value="SEMUA">Wilayah: Semua Desa (Kabupaten Bojonegoro)</option>
               {villages.map((v) => (
                 <option key={v.id} value={v.name}>
                   Wilayah: Desa {v.name}
@@ -209,8 +209,8 @@ export const RekapitulasiF2KB: React.FC<RekapitulasiF2KBProps> = ({ facility, vi
         <div className="border-b-2 border-slate-800 pb-4 mb-4 text-center">
           <div className="flex items-center justify-between mb-2">
             <div className="text-left text-[11px] font-mono font-semibold text-slate-600">
-              <div>KODE REGISTER FASKES: {facility.k0kbCode}</div>
-              <div>KODE FASKES KB: {facility.code}</div>
+              <div>KODE REGISTER DINAS: {facility.k0kbCode}</div>
+              <div>KODE INSTANSI KB: {facility.code}</div>
             </div>
             <div className="px-2.5 py-1 border border-slate-800 rounded font-bold text-xs bg-slate-50 text-slate-900">
               FORMULIR F/II/KB
@@ -224,13 +224,13 @@ export const RekapitulasiF2KB: React.FC<RekapitulasiF2KBProps> = ({ facility, vi
             {facility.name}
           </h2>
           <p className="text-xs text-slate-600 mt-0.5">
-            Kecamatan {facility.district}, {facility.regency}, Provinsi {facility.province}
+            {facility.regency}, Provinsi {facility.province}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-800 bg-slate-50 py-1.5 px-4 rounded-lg border border-slate-200 inline-block">
             <span>PERIODE LAPORAN: <b>{monthNames[selectedMonth - 1].toUpperCase()} {selectedYear}</b></span>
             <span>•</span>
-            <span>CAKUPAN WILAYAH: <b>{selectedVillage === 'SEMUA' ? 'SELURUH WILAYAH KERJA PUSKESMAS' : `DESA ${selectedVillage.toUpperCase()}`}</b></span>
+            <span>CAKUPAN WILAYAH: <b>{selectedVillage === 'SEMUA' ? 'SELURUH KABUPATEN BOJONEGORO (DINAS P3AKB)' : `DESA ${selectedVillage.toUpperCase()}`}</b></span>
           </div>
         </div>
 

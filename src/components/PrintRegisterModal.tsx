@@ -110,9 +110,9 @@ export const PrintRegisterModal: React.FC<PrintRegisterModalProps> = ({
           <div className="flex items-center space-x-2">
             <Printer className="w-5 h-5 text-emerald-400" />
             <div>
-              <h3 className="text-sm font-bold">Cetak / Simpan PDF Register Pelayanan KB Faskes</h3>
+              <h3 className="text-sm font-bold">Cetak / Simpan PDF Register Pelayanan KB Dinas P3AKB Bojonegoro</h3>
               <p className="text-[11px] text-slate-400">
-                Format Resmi BKKBN (Sesuai Dokumen Laporan Pelayanan KB)
+                Format Resmi BKKBN (Dinas Pemberdayaan Perempuan, Perlindungan Anak dan KB)
               </p>
             </div>
           </div>
@@ -177,21 +177,21 @@ export const PrintRegisterModal: React.FC<PrintRegisterModalProps> = ({
           <div className="border-b-2 border-slate-900 pb-3 mb-3 text-center">
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-700 mb-2">
               <div className="text-left">
-                <div>KODE FASKES KB: <b>{facility.code}</b></div>
+                <div>KODE INSTANSI KB: <b>{facility.code}</b></div>
                 <div>KODE REGISTER K/0/KB: <b>{facility.k0kbCode}</b></div>
               </div>
               <div className="text-right">
                 <div>PROVINSI: <b>{facility.province.toUpperCase()}</b></div>
                 <div>KABUPATEN: <b>{facility.regency.toUpperCase()}</b></div>
-                <div>KECAMATAN: <b>{facility.district.toUpperCase()}</b></div>
+                <div>DINAS P3AKB BOJONEGORO</div>
               </div>
             </div>
 
             <h1 className="text-sm sm:text-base font-extrabold uppercase text-slate-950 tracking-wider">
-              REGISTER PELAYANAN KELUARGA BERENCANA FASILITAS KESEHATAN
+              REGISTER PELAYANAN KELUARGA BERENCANA DINAS P3AKB KABUPATEN BOJONEGORO
             </h1>
             <h2 className="text-xs font-bold uppercase text-slate-800">
-              {facility.name} - KECAMATAN {facility.district.toUpperCase()}
+              {facility.name}
             </h2>
             <div className="text-[11px] text-slate-700 mt-1 font-semibold flex items-center justify-center gap-3">
               <span>

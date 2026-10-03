@@ -67,6 +67,13 @@ export const StorageService = {
     // Bersihkan data contoh lawas jika ada
     localStorage.removeItem('kb_faskes_patient_records_v1');
 
+    // Kosongkan seluruh desa sesuai instruksi pengguna ("Kosongkan semua nama desa")
+    if (!localStorage.getItem('kb_p3akb_villages_cleared_v4')) {
+      safeSet(STORAGE_KEYS.VILLAGES, []);
+      FirestoreService.clearAllVillages();
+      localStorage.setItem('kb_p3akb_villages_cleared_v4', 'true');
+    }
+
     const isFirstTime = !localStorage.getItem(STORAGE_KEYS.INITIALIZED);
 
     if (isFirstTime) {
@@ -82,9 +89,7 @@ export const StorageService = {
       if (!localStorage.getItem(STORAGE_KEYS.DISTRICTS)) {
         safeSet(STORAGE_KEYS.DISTRICTS, initialDistricts);
       }
-      if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
-        safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
-      }
+      safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
       if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
         safeSet(STORAGE_KEYS.RECORDS, []);
       }
@@ -95,18 +100,19 @@ export const StorageService = {
             timestamp: new Date().toISOString(),
             username: 'system',
             action: 'INISIALISASI_SISTEM',
-            details: 'Sistem Register Pelayanan KB Faskes diinisialisasi dengan data bersih',
+            details: 'Sistem Register Pelayanan KB Dinas P3AKB Bojonegoro diinisialisasi',
           },
         ]);
       }
       localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     } else {
-      // Pastikan struktur dasar tetap valid tanpa mengembalikan data yang sudah dihapus pengguna
+      // Pastikan struktur profil instansi selalu menggunakan identitas resmi Dinas P3AKB Bojonegoro
+      const currentProf = safeGet<FacilityProfile | null>(STORAGE_KEYS.PROFILE, null);
+      if (!currentProf || !currentProf.name || currentProf.name.includes('PUSKESMAS') || currentProf.name.includes('Sambungmacan') || !currentProf.name.includes('P3AKB')) {
+        safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+      }
       if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
         safeSet(STORAGE_KEYS.RECORDS, []);
-      }
-      if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) {
-        safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
       }
       if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
         const users = safeGet<User[]>(STORAGE_KEYS.USERS, []);
@@ -157,9 +163,20 @@ export const StorageService = {
     }
   },
 
-  // FACILITY PROFILE
+  // FACILITY PROFILE (DINAS P3AKB KABUPATEN BOJONEGORO)
   getFacilityProfile(): FacilityProfile {
-    return safeGet<FacilityProfile>(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+    const prof = safeGet<FacilityProfile>(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+    if (
+      !prof ||
+      !prof.name ||
+      prof.name.includes('PUSKESMAS') ||
+      prof.name.includes('Sambungmacan') ||
+      !prof.name.includes('P3AKB')
+    ) {
+      safeSet(STORAGE_KEYS.PROFILE, initialFacilityProfile);
+      return initialFacilityProfile;
+    }
+    return prof;
   },
   saveFacilityProfileLocallyOnly(profile: FacilityProfile): void {
     safeSet(STORAGE_KEYS.PROFILE, profile);
@@ -171,7 +188,11 @@ export const StorageService = {
 
   // VILLAGES
   getVillages(): Village[] {
-    return safeGet<Village[]>(STORAGE_KEYS.VILLAGES, initialVillages);
+    return safeGet<Village[]>(STORAGE_KEYS.VILLAGES, []);
+  },
+  clearAllVillages(): void {
+    safeSet(STORAGE_KEYS.VILLAGES, []);
+    FirestoreService.clearAllVillages();
   },
   saveVillagesLocallyOnly(villages: Village[]): void {
     safeSet(STORAGE_KEYS.VILLAGES, villages);

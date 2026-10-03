@@ -188,13 +188,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               }`}
             >
               {isAdminInduk
-                ? `👑 Admin Induk Kabupaten${currentUser?.district ? ` (Kec. ${currentUser.district})` : ' (Semua Kecamatan)'}`
+                ? `👑 Admin Induk Dinas P3AKB${currentUser?.district ? ` (Kec. ${currentUser.district})` : ' (Semua Kecamatan)'}`
                 : isAdminKecamatan
                 ? `🏢 Admin Kec. ${currentUser?.district || facility.district}`
                 : `🌿 Admin Desa: ${currentUser?.village || ''}`}
             </span>
             <span className="text-xs text-slate-500 font-medium">
-              {facility.name} • Kec. {facility.district}
+              {facility.name} • Kab. {facility.regency}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
@@ -202,14 +202,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ? `Rekap Entri Pelayanan KB Desa ${currentUser?.village || ''}`
               : isAdminKecamatan
               ? `Monitoring & Pengawasan Entri KB Kec. ${facility.district}`
-              : 'Rekap Eksekutif Pelayanan KB Kabupaten'}
+              : 'Rekap Eksekutif Pelayanan KB Dinas P3AKB Bojonegoro'}
           </h1>
           <p className="text-xs text-slate-500">
             {isBidanDesa
               ? `Pantauan data akseptor KB yang telah Anda entri khusus wilayah Desa ${currentUser?.village || ''}`
               : isAdminKecamatan
               ? `Pengawasan kepatuhan pelaporan data entri dari seluruh Admin Desa di wilayah kerja Kecamatan ${facility.district}`
-              : 'Ringkasan capaian seluruh wilayah kerja kabupaten & puskesmas, KBPP (Pasca Persalinan), dan Kunjungan Ulang'}
+              : 'Ringkasan capaian pelayanan KB seluruh kecamatan dan desa se-Kabupaten Bojonegoro (Dinas P3AKB Bojonegoro)'}
           </p>
         </div>
 
@@ -618,8 +618,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+        {villageMatrix.length === 0 ? (
+          <div className="p-8 text-center bg-slate-50/50 text-slate-500 text-xs space-y-1">
+            <p className="font-semibold text-slate-700">Belum ada data desa binaan</p>
+            <p className="text-[11px] text-slate-400">Seluruh desa telah dikosongkan. Anda dapat menambahkan desa baru pada menu Pengaturan.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse border border-slate-300">
             <thead>
               <tr className="bg-slate-100 text-center font-bold text-slate-800 border-b border-slate-300">
                 <th className="border border-slate-300 p-2 w-10">No</th>
@@ -685,6 +691,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </tfoot>
           </table>
         </div>
+        )}
       </div>
 
       {/* RECENT RECORDS (5 DATA TERAKHIR DILAYANI) */}

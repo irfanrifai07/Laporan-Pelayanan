@@ -41,5 +41,17 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // System initialization and health check
+    match /system/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Connection test collection
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

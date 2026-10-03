@@ -45,9 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     switch (user.role) {
       case 'admin_induk':
       case 'admin_kabupaten':
-        return 'Admin Induk Kabupaten';
+        return 'Admin Induk Dinas P3AKB';
       case 'admin_kecamatan':
-        return 'Admin Kecamatan';
+        return `Admin Kec. ${user.district || facility.district}`;
       case 'admin_desa':
       case 'bidan_desa':
         return `Admin Desa: ${user.village || 'Desa'}`;
@@ -86,13 +86,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     <>
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs print:hidden">
         {/* Top institutional mini bar */}
-        <div className="bg-emerald-800 text-emerald-50 text-xs py-1.5 px-4 sm:px-6">
+        <div className="bg-emerald-900 text-emerald-50 text-xs py-1.5 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
             <div className="flex items-center space-x-2">
-              <span className="font-bold tracking-wide uppercase bg-emerald-700/60 px-2 py-0.5 rounded text-[10px] text-white">
-                BKKBN • F/II/KB
+              <span className="font-bold tracking-wide uppercase bg-emerald-800 px-2 py-0.5 rounded text-[10px] text-white shadow-2xs border border-emerald-600/50">
+                DINAS P3AKB BOJONEGORO
               </span>
-              <span className="font-medium text-emerald-100">{facility.name}</span>
+              <span className="font-medium text-emerald-100 hidden sm:inline">Pengendalian Penduduk & KB</span>
             </div>
             <div className="flex items-center space-x-3 text-emerald-200 text-[11px]">
               {/* Kecamatan Switcher for Admin Induk */}
@@ -168,12 +168,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="text-base font-bold text-slate-900 leading-tight">
                     SIM Pelayanan KB
                   </span>
-                  <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Faskes
+                  <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    Dinas P3AKB
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 hidden sm:block">
-                  Pencatatan & Pelaporan Kontrasepsi BKKBN
+                  Dinas P3AKB Kab. Bojonegoro • Format Resmi BKKBN
                 </p>
               </div>
             </button>

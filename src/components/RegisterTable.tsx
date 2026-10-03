@@ -300,7 +300,7 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
                         : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     }`}
                   >
-                    {isAdminInduk ? `👑 Admin Induk Kabupaten${currentUser?.district ? ` (Kec. ${currentUser.district})` : ''}` : isAdminKecamatan ? `🏢 Admin Kec. ${currentUser?.district || facility.district}` : '🌿 Admin Desa'}
+                    {isAdminInduk ? `👑 Admin Induk Dinas P3AKB${currentUser?.district ? ` (Kec. ${currentUser.district})` : ''}` : isAdminKecamatan ? `🏢 Admin Kec. ${currentUser?.district || facility.district}` : '🌿 Admin Desa'}
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-500">
@@ -308,7 +308,7 @@ export const RegisterTable: React.FC<RegisterTableProps> = ({
                     ? `Format Resmi BKKBN • Khusus pencatatan pelayanan akseptor wilayah Desa ${currentUser?.village || ''}`
                     : isAdminKecamatan
                     ? `Format Resmi BKKBN • Mengawasi dan memverifikasi data seluruh Admin Desa di Kecamatan ${facility.district}`
-                    : 'Format Resmi BKKBN • Kendali penuh atas seluruh data register pelayanan KB tingkat Kabupaten'}
+                    : 'Format Resmi BKKBN • Kendali penuh data register pelayanan KB Dinas P3AKB Kabupaten Bojonegoro'}
                 </p>
               </div>
             </div>

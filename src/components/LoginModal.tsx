@@ -422,11 +422,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                           <div>
                             <div className="font-bold text-purple-900 flex items-center space-x-1.5">
-                              <span>👑 1. Admin Induk Kabupaten</span>
+                              <span>👑 1. Admin Induk Dinas P3AKB</span>
                               <span className="font-mono text-[10px] bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded font-semibold">@admin</span>
                             </div>
                             <p className="text-[10px] text-purple-700 mt-0.5">
-                              Mengendalikan seluruh sistem se-kabupaten & menentukan admin kecamatan mana saja
+                              Kendali penuh seluruh sistem Dinas P3AKB se-Kabupaten Bojonegoro
                             </p>
                           </div>
                           <span className="text-[10px] font-bold text-purple-800 bg-white px-2 py-0.5 rounded-lg border border-purple-200 shrink-0">
@@ -477,11 +477,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="font-bold text-blue-900 flex items-center space-x-1.5">
-                              <span>🏢 2. Admin Kecamatan</span>
+                              <span>🏢 2. Admin Kecamatan (Koordinator KB)</span>
                               <span className="text-[10px] text-blue-700">({kecamatanUsers.length} Terdaftar)</span>
                             </div>
                             <p className="text-[10px] text-blue-700 mt-0.5">
-                              Pilih salah satu akun Admin Kecamatan:
+                              Pilih salah satu akun Koordinator / Admin Kecamatan:
                             </p>
                           </div>
                         </div>
@@ -497,7 +497,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               }}
                               className="px-2.5 py-1 bg-white hover:bg-blue-100/70 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition active:scale-95"
                             >
-                              <span>Kec. {ku.district || 'Sambungmacan'}</span>
+                              <span>Kec. {ku.district || 'Bojonegoro'}</span>
                               <span className="font-mono text-[9px] text-blue-600 bg-blue-50 px-1 rounded">@{ku.username}</span>
                             </button>
                           ))}
@@ -507,18 +507,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          setUsername('duyungan');
+                          setUsername('sukorejo');
                           setPassword('123');
                         }}
                         className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/80 transition text-left flex items-center justify-between cursor-pointer"
                       >
                         <div>
                           <div className="font-bold text-emerald-900 flex items-center space-x-1.5">
-                            <span>🌿 3. Admin Desa</span>
-                            <span className="font-mono text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">@duyungan</span>
+                            <span>🌿 3. Admin Desa (Petugas Entri KB)</span>
+                            <span className="font-mono text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">@sukorejo</span>
                           </div>
                           <p className="text-[10px] text-emerald-700 mt-0.5">
-                            Tugas khusus untuk menentri data register pelayanan KB di desanya
+                            Tugas khusus untuk menentri data register pelayanan akseptor KB desa binaan
                           </p>
                         </div>
                         <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200">

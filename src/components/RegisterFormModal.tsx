@@ -44,7 +44,7 @@ export const RegisterFormModal: React.FC<RegisterFormModalProps> = ({
 
   const defaultVillage =
     initialData?.village ||
-    (currentUser?.role === 'bidan_desa' && currentUser.village ? currentUser.village : villages[0]?.name || 'Duyungan');
+    (currentUser?.role === 'bidan_desa' && currentUser.village ? currentUser.village : villages[0]?.name || '');
 
   const selectedVillageObj = villages.find((v) => v.name === defaultVillage);
   const isVillageLocked = selectedVillageObj && !selectedVillageObj.entryAllowed && currentUser?.role === 'bidan_desa';
@@ -102,8 +102,8 @@ export const RegisterFormModal: React.FC<RegisterFormModalProps> = ({
     setValidationError('');
 
     const targetVillage = villages.find((v) => v.name === village);
-    if (targetVillage && !targetVillage.entryAllowed && currentUser?.role === 'bidan_desa') {
-      setValidationError(`Entri data untuk Desa ${village} saat ini dikunci oleh Admin Puskesmas.`);
+    if (targetVillage && !targetVillage.entryAllowed && (currentUser?.role === 'bidan_desa' || currentUser?.role === 'admin_desa')) {
+      setValidationError(`Entri data untuk Desa ${village} saat ini sedang dikunci oleh Admin Kecamatan / Admin Induk Dinas P3AKB.`);
       return;
     }
 
@@ -304,18 +304,29 @@ export const RegisterFormModal: React.FC<RegisterFormModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Desa / Wilayah <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={village}
-                  onChange={(e) => setVillage(e.target.value)}
-                  disabled={currentUser?.role === 'bidan_desa'}
-                  className="w-full text-xs py-2 px-3 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 disabled:bg-slate-100"
-                >
-                  {villages.map((v) => (
-                    <option key={v.id} value={v.name}>
-                      Desa {v.name}
-                    </option>
-                  ))}
-                </select>
+                {villages.length > 0 ? (
+                  <select
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                    disabled={currentUser?.role === 'bidan_desa'}
+                    className="w-full text-xs py-2 px-3 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 disabled:bg-slate-100"
+                  >
+                    {villages.map((v) => (
+                      <option key={v.id} value={v.name}>
+                        Desa {v.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                    placeholder="Masukkan nama desa..."
+                    className="w-full text-xs py-2 px-3 bg-white border border-slate-300 rounded-xl font-medium"
+                  />
+                )}
               </div>
 
               <div>

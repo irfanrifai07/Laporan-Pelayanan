@@ -235,6 +235,19 @@ export const FirestoreService = {
     }
   },
 
+  async clearAllVillages(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, VILLAGES_COL));
+      const batch = writeBatch(db);
+      snap.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error('Failed clearAllVillages in Firestore:', e);
+    }
+  },
+
   async syncAllVillages(villages: Village[]): Promise<void> {
     try {
       const snap = await getDocs(collection(db, VILLAGES_COL));
@@ -323,7 +336,10 @@ export const FirestoreService = {
       docRef,
       (snapshot) => {
         if (snapshot.exists()) {
-          onUpdate(snapshot.data() as FacilityProfile);
+          const data = snapshot.data() as FacilityProfile;
+          if (data && data.name && !data.name.includes('PUSKESMAS') && !data.name.includes('Sambungmacan') && data.name.includes('P3AKB')) {
+            onUpdate(data);
+          }
         }
       },
       (err) => console.error('Error subscribeFacility:', err)
@@ -339,7 +355,7 @@ export const FirestoreService = {
     }
   },
 
-  // Inisialisasi awal ke Firestore (memastikan koleksi awal seperti kecamatan & faskes terisi)
+  // Inisialisasi awal ke Firestore (memastikan koleksi awal seperti kecamatan & profil dinas terisi)
   async initializeCloudDatabase(initialData: {
     users: User[];
     records: PatientRecord[];
@@ -348,6 +364,22 @@ export const FirestoreService = {
     facility: FacilityProfile;
   }): Promise<void> {
     try {
+      // 0. Bersihkan seluruh desa di Firestore sesuai permintaan pengguna ("Kosongkan semua nama desa")
+      try {
+        const villageCleanRef = doc(db, SYSTEM_COL, 'villages_cleared_v4');
+        const cleanSnap = await getDocFromServer(villageCleanRef);
+        if (!cleanSnap.exists()) {
+          await this.clearAllVillages();
+          await setDoc(villageCleanRef, { clearedAt: new Date().toISOString() });
+        }
+      } catch {
+        try {
+          await this.clearAllVillages();
+        } catch (clearErr) {
+          console.warn('Pembersihan desa cloud:', clearErr);
+        }
+      }
+
       // 1. Cek dan pastikan koleksi kecamatan terisi jika masih kosong di cloud
       if (initialData.districts && initialData.districts.length > 0) {
         try {
@@ -360,44 +392,61 @@ export const FirestoreService = {
         }
       }
 
-      // 2. Cek dan pastikan profil faskes terisi
+      // 2. Cek dan pastikan profil Dinas P3AKB Bojonegoro terisi & mutakhirkan jika masih data puskesmas lama
       try {
         const facSnap = await getDocs(collection(db, FACILITY_COL));
         if (facSnap.empty) {
           await this.saveFacility(initialData.facility);
+        } else {
+          const curDoc = facSnap.docs[0];
+          const data = curDoc.data() as FacilityProfile;
+          if (
+            !data.name ||
+            data.name.includes('PUSKESMAS') ||
+            data.name.includes('Sambungmacan') ||
+            !data.name.includes('P3AKB')
+          ) {
+            await this.saveFacility(initialData.facility);
+          }
         }
       } catch (err) {
-        console.warn('Gagal cek faskes cloud:', err);
+        console.warn('Gagal cek profil dinas cloud:', err);
       }
 
-      // 3. Cek desa dan users
-      const initDocRef = doc(db, SYSTEM_COL, 'cloud_init');
-      let isAlreadyInitialized = false;
+      // 3. Cek users dan inisialisasi cloud
       try {
-        const initSnap = await getDocFromServer(initDocRef);
-        if (initSnap.exists()) {
-          isAlreadyInitialized = true;
-        }
-      } catch {
-        // Abaikan jika dokumen belum ada
-      }
-
-      if (!isAlreadyInitialized) {
-        const userSnap = await getDocs(collection(db, USERS_COL));
-        if (userSnap.empty) {
-          await this.syncAllUsers(initialData.users);
+        const initDocRef = doc(db, SYSTEM_COL, 'cloud_init');
+        let isAlreadyInitialized = false;
+        try {
+          const initSnap = await getDocFromServer(initDocRef);
+          if (initSnap.exists()) {
+            isAlreadyInitialized = true;
+          }
+        } catch {
+          // Abaikan jika dokumen belum ada
         }
 
-        const vilSnap = await getDocs(collection(db, VILLAGES_COL));
-        if (vilSnap.empty) {
-          await this.syncAllVillages(initialData.villages);
-        }
+        if (!isAlreadyInitialized) {
+          const userSnap = await getDocs(collection(db, USERS_COL));
+          if (userSnap.empty && initialData.users && initialData.users.length > 0) {
+            await this.syncAllUsers(initialData.users);
+          }
 
-        // Tandai bahwa basis data sudah diinisialisasi
-        await setDoc(initDocRef, { initializedAt: new Date().toISOString() });
+          if (initialData.villages && initialData.villages.length > 0) {
+            const vilSnap = await getDocs(collection(db, VILLAGES_COL));
+            if (vilSnap.empty) {
+              await this.syncAllVillages(initialData.villages);
+            }
+          }
+
+          // Tandai bahwa basis data sudah diinisialisasi
+          await setDoc(initDocRef, { initializedAt: new Date().toISOString() });
+        }
+      } catch (err) {
+        console.warn('Inisialisasi sistem cloud:', err);
       }
     } catch (e) {
-      console.error('Initial cloud seed error:', e);
+      console.warn('Initial cloud seed notice:', e);
     }
   },
 };
